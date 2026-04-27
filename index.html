@@ -1,441 +1,820 @@
-
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studyo4 — Horas Extras</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-.hdr{display:flex;justify-content:space-between;align-items:center;padding:1rem 0 0.75rem;border-bottom:0.5px solid var(--color-border-tertiary);margin-bottom:1rem}
-.hdr-title{font-size:18px;font-weight:500;color:var(--color-text-primary)}
-.hdr-date{font-size:12px;color:var(--color-text-secondary)}
-.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1rem}
-.mc{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:12px 14px}
-.mc-lbl{font-size:12px;color:var(--color-text-secondary);margin-bottom:4px}
-.mc-val{font-size:22px;font-weight:500;color:var(--color-text-primary)}
-.mc-sub{font-size:11px;color:var(--color-text-tertiary);margin-top:2px}
-.tabs{display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap}
-.tab{padding:6px 14px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);font-size:13px;cursor:pointer;background:transparent;color:var(--color-text-secondary)}
-.tab.on{background:var(--color-background-secondary);color:var(--color-text-primary);border-color:var(--color-border-primary);font-weight:500}
-.sec{display:none}.sec.on{display:block}
-.card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem;margin-bottom:1rem}
-.card-ttl{font-size:13px;font-weight:500;color:var(--color-text-secondary);margin-bottom:12px}
-.person-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:1rem}
-.person-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem}
-.avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;margin-bottom:10px}
-.pname{font-size:14px;font-weight:500;color:var(--color-text-primary)}
-.prole{font-size:12px;color:var(--color-text-secondary);margin-bottom:10px}
-.pbar-wrap{margin-top:8px}
-.pbar-row{display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;color:var(--color-text-secondary)}
-.pbar{height:6px;background:var(--color-background-secondary);border-radius:99px;overflow:hidden;margin-bottom:6px}
-.pfill{height:100%;border-radius:99px;transition:width .3s}
-.task-chip{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;margin:2px;border:0.5px solid var(--color-border-secondary);color:var(--color-text-secondary)}
-.sel-row{display:flex;gap:8px;align-items:center;margin-bottom:1rem;flex-wrap:wrap}
-.sel-row select,.sel-row input{height:34px;padding:0 10px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);font-size:13px;background:var(--color-background-primary);color:var(--color-text-primary)}
-.btn{height:34px;padding:0 14px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);font-size:13px;cursor:pointer;background:transparent;color:var(--color-text-primary)}
-.btn-p{background:var(--color-text-primary);color:var(--color-background-primary);border-color:var(--color-text-primary)}
-.btn-p:hover{opacity:.85}
-.prod-tbl{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
-.prod-tbl th{text-align:left;padding:7px 8px;color:var(--color-text-secondary);font-weight:500;border-bottom:0.5px solid var(--color-border-tertiary);font-size:12px}
-.prod-tbl td{padding:7px 8px;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-primary);vertical-align:middle}
-.prod-tbl tr:last-child td{border-bottom:none}
-.ck{width:16px;height:16px;cursor:pointer;accent-color:#378ADD}
-.ok-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#639922;margin-right:4px}
-.pend-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#EF9F27;margin-right:4px}
-.session-tbl{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
-.session-tbl th{text-align:left;padding:7px 8px;color:var(--color-text-secondary);font-weight:500;border-bottom:0.5px solid var(--color-border-tertiary);font-size:12px}
-.session-tbl td{padding:7px 8px;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-primary)}
-.session-tbl tr:last-child td{border-bottom:none}
-.del-btn{background:none;border:none;cursor:pointer;color:var(--color-text-tertiary);font-size:15px;padding:0 2px}
-.del-btn:hover{color:#E24B4A}
-.rpt-block{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:1rem;font-size:13px;line-height:1.8;color:var(--color-text-primary);white-space:pre-wrap;margin-bottom:10px}
-.empty{text-align:center;padding:2rem;color:var(--color-text-tertiary);font-size:13px}
-.chart-wrap{position:relative;width:100%;height:200px;margin-top:1rem}
-.form-row{display:grid;gap:8px;align-items:end;margin-bottom:8px}
-.fg{display:flex;flex-direction:column;gap:3px}
-.fg label{font-size:12px;color:var(--color-text-secondary)}
-.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--color-text-secondary);margin-bottom:8px}
-.leg-dot{width:10px;height:10px;border-radius:2px;display:inline-block;margin-right:4px}
+  :root {
+    --bg: #f7f6f3;
+    --surface: #ffffff;
+    --surface2: #f0efe9;
+    --border: rgba(0,0,0,0.08);
+    --border2: rgba(0,0,0,0.14);
+    --text: #1a1916;
+    --text2: #6b6860;
+    --text3: #a09e98;
+    --accent: #2c2c2a;
+    --green: #2d6a4f; --green-bg: #d8f3dc;
+    --blue: #1a5276; --blue-bg: #d6eaf8;
+    --amber: #7d5a00; --amber-bg: #fef3cd;
+    --purple: #4a2a7a; --purple-bg: #ede7f6;
+    --red: #922b21; --red-bg: #fadbd8;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Georgia', serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  
+  /* HEADER */
+  .topbar { background: var(--surface); border-bottom: 1px solid var(--border2); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 100; }
+  .logo { font-size: 15px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text); font-family: 'Georgia', serif; }
+  .logo span { color: var(--text3); font-weight: 400; }
+  .auth-area { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .auth-status { color: var(--text2); font-family: Arial, sans-serif; }
+  .auth-status.connected { color: var(--green); }
+  .btn-signout { font-size: 12px; padding: 4px 10px; border: 1px solid var(--border2); border-radius: var(--radius-sm); cursor: pointer; background: transparent; color: var(--text2); font-family: Arial, sans-serif; }
+
+  /* LAYOUT */
+  .container { max-width: 1100px; margin: 0 auto; padding: 1.5rem 2rem; }
+
+  /* METRICS */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 1.5rem; }
+  .mc { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+  .mc-lbl { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; font-family: Arial, sans-serif; }
+  .mc-val { font-size: 26px; color: var(--text); line-height: 1; margin-bottom: 3px; }
+  .mc-sub { font-size: 11px; color: var(--text3); font-family: Arial, sans-serif; }
+
+  /* TABS */
+  .tabs { display: flex; gap: 4px; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border); padding-bottom: 0; }
+  .tab { padding: 8px 16px; font-size: 13px; cursor: pointer; background: transparent; border: none; color: var(--text2); border-bottom: 2px solid transparent; margin-bottom: -1px; font-family: Arial, sans-serif; transition: all .15s; }
+  .tab:hover { color: var(--text); }
+  .tab.on { color: var(--text); border-bottom-color: var(--text); font-weight: 600; }
+
+  /* SECTIONS */
+  .sec { display: none; } .sec.on { display: block; }
+
+  /* CARDS */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem 1.5rem; margin-bottom: 1rem; }
+  .card-ttl { font-size: 12px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; font-family: Arial, sans-serif; }
+
+  /* PERSON GRID */
+  .person-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 1rem; }
+  .person-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; }
+  .avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; font-family: Arial, sans-serif; flex-shrink: 0; }
+  .pname { font-size: 15px; color: var(--text); margin-bottom: 2px; }
+  .prole { font-size: 12px; color: var(--text3); font-family: Arial, sans-serif; }
+  .pbar { height: 5px; background: var(--surface2); border-radius: 99px; overflow: hidden; margin: 10px 0 8px; }
+  .pfill { height: 100%; border-radius: 99px; transition: width .4s; }
+  .task-chip { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 99px; margin: 2px; border: 1px solid var(--border2); color: var(--text2); font-family: Arial, sans-serif; }
+
+  /* FORM */
+  .fg { display: flex; flex-direction: column; gap: 4px; }
+  .fg label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; font-family: Arial, sans-serif; }
+  .fg input, .fg select, .fg textarea { height: 36px; padding: 0 10px; border: 1px solid var(--border2); border-radius: var(--radius-sm); font-size: 13px; background: var(--surface); color: var(--text); font-family: Arial, sans-serif; outline: none; }
+  .fg input:focus, .fg select:focus { border-color: var(--accent); }
+  .fg textarea { height: 70px; padding: 8px 10px; resize: vertical; }
+  .form-row { display: grid; gap: 10px; margin-bottom: 10px; }
+  .btn { height: 36px; padding: 0 16px; border: 1px solid var(--border2); border-radius: var(--radius-sm); font-size: 13px; cursor: pointer; background: transparent; color: var(--text); font-family: Arial, sans-serif; transition: all .15s; }
+  .btn:hover { background: var(--surface2); }
+  .btn-p { background: var(--text); color: #fff; border-color: var(--text); }
+  .btn-p:hover { opacity: .85; background: var(--text); }
+  .btn-sm { height: 28px; padding: 0 10px; font-size: 12px; }
+
+  /* TASK CHECKS */
+  .ck-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px; margin-top: 10px; }
+  .ck-label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 12px; color: var(--text2); padding: 7px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg); font-family: Arial, sans-serif; transition: all .12s; }
+  .ck-label:hover { border-color: var(--border2); background: var(--surface2); }
+  .ck-label.done { border-color: #2d6a4f; background: #d8f3dc; color: #1b4332; }
+  .ck { width: 15px; height: 15px; cursor: pointer; accent-color: #2d6a4f; flex-shrink: 0; }
+  .nv-label { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text3); padding: 7px 10px; border-radius: var(--radius-sm); border: 1px dashed var(--border); background: var(--bg); font-family: Arial, sans-serif; opacity: .6; }
+
+  /* TABLE */
+  .tbl-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { text-align: left; padding: 8px 10px; color: var(--text3); font-weight: 600; border-bottom: 1px solid var(--border2); font-size: 11px; white-space: nowrap; font-family: Arial, sans-serif; text-transform: uppercase; letter-spacing: .05em; }
+  td { padding: 7px 10px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface2); }
+  .tc { text-align: center; width: 60px; }
+
+  /* BADGES */
+  .ok-b { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 20px; border-radius: 4px; font-size: 10px; font-weight: 700; background: #d8f3dc; color: #1b4332; font-family: Arial, sans-serif; }
+  .no-b { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 4px; font-size: 11px; color: var(--text3); }
+  .nv-b { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 20px; border-radius: 4px; font-size: 9px; font-weight: 600; background: #fef3cd; color: #7d5a00; font-family: Arial, sans-serif; }
+  .pill { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; display: inline-block; font-family: Arial, sans-serif; }
+  .pct-bar { display: flex; align-items: center; gap: 8px; }
+  .mini-bar { flex: 1; height: 4px; background: var(--surface2); border-radius: 99px; overflow: hidden; min-width: 40px; }
+  .mini-fill { height: 100%; border-radius: 99px; }
+
+  /* HISTORY */
+  .del-btn { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 15px; padding: 0 4px; }
+  .del-btn:hover { color: #922b21; }
+  .chart-wrap { position: relative; width: 100%; height: 200px; margin-top: 1rem; }
+
+  /* REPORT */
+  .rpt-block { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1.25rem; font-size: 12px; line-height: 1.9; color: var(--text); white-space: pre-wrap; font-family: 'Courier New', monospace; }
+  .empty { text-align: center; padding: 2.5rem; color: var(--text3); font-size: 13px; font-family: Arial, sans-serif; }
+
+  /* GDRIVE */
+  .gdrive-banner { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); padding: 1rem 1.5rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+  .gdrive-info { font-size: 13px; color: var(--text2); font-family: Arial, sans-serif; }
+  .gdrive-info strong { color: var(--text); display: block; margin-bottom: 2px; }
+  .sync-status { font-size: 12px; font-family: Arial, sans-serif; padding: 4px 10px; border-radius: 99px; }
+  .sync-ok { background: var(--green-bg); color: var(--green); }
+  .sync-no { background: var(--surface2); color: var(--text3); }
+  .sync-ing { background: var(--amber-bg); color: var(--amber); }
+
+  /* PBAR SECTION */
+  .pbar-wrap { margin-bottom: 10px; }
+  .pbar-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-bottom: 4px; font-family: Arial, sans-serif; }
+  .pbar-row span:first-child { color: var(--text2); }
+  .pbar-row span:last-child { font-weight: 600; }
+  .section-sep { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
+
+  /* SEARCH ROW */
+  .sel-row { display: flex; gap: 10px; align-items: flex-end; margin-bottom: 1rem; flex-wrap: wrap; }
+
+  /* SYNC SETUP */
+  .setup-box { background: var(--amber-bg); border: 1px solid #f0c040; border-radius: var(--radius); padding: 1rem 1.5rem; margin-bottom: 1.25rem; font-family: Arial, sans-serif; font-size: 13px; color: var(--amber); }
+  .setup-box strong { display: block; margin-bottom: 6px; font-size: 14px; }
+  .setup-box ol { margin-left: 1.2rem; line-height: 2; }
+  .setup-box input { margin-top: 8px; width: 100%; height: 36px; padding: 0 10px; border: 1px solid #f0c040; border-radius: var(--radius-sm); font-size: 13px; background: #fff; }
+  .setup-box .btn { margin-top: 8px; }
 </style>
+</head>
+<body>
 
-<h2 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden">Painel de acompanhamento de horas extras da equipe Studyo4</h2>
-
-<div class="hdr">
-  <div class="hdr-title">Horas extras — Studyo4</div>
-  <div class="hdr-date" id="hdr-date"></div>
+<div class="topbar">
+  <div class="logo">STUDYO4 <span>/ Horas Extras</span></div>
+  <div class="auth-area">
+    <span class="auth-status" id="auth-status">Não conectado ao Drive</span>
+    <div id="google-btn"></div>
+    <button class="btn-signout" id="btn-signout" onclick="signOut()" style="display:none">Sair</button>
+  </div>
 </div>
 
-<div class="metrics">
-  <div class="mc"><div class="mc-lbl">Total de horas</div><div class="mc-val" id="m-h">0h</div><div class="mc-sub">em horas extras</div></div>
-  <div class="mc"><div class="mc-lbl">Sessões registradas</div><div class="mc-val" id="m-s">0</div><div class="mc-sub">dias trabalhados</div></div>
-  <div class="mc"><div class="mc-lbl">Tarefas concluídas</div><div class="mc-val" id="m-t">0%</div><div class="mc-sub">média geral</div></div>
-  <div class="mc"><div class="mc-lbl">Produtos finalizados</div><div class="mc-val" id="m-p">0/9</div><div class="mc-sub">100% das tarefas</div></div>
-</div>
+<div class="container">
 
-<div class="tabs">
-  <button class="tab on" onclick="sw('visao')">Visão geral</button>
-  <button class="tab" onclick="sw('checklist')">Checklist</button>
-  <button class="tab" onclick="sw('sessao')">Registrar sessão</button>
-  <button class="tab" onclick="sw('historico')">Histórico</button>
-  <button class="tab" onclick="sw('relatorio')">Relatório</button>
-</div>
-
-<div class="sec on" id="sec-visao">
-  <div class="person-grid" id="person-cards"></div>
-</div>
-
-<div class="sec" id="sec-checklist">
-  <div class="sel-row">
-    <div class="fg"><label>Filtrar por pessoa</label>
-      <select id="filter-person" onchange="renderChecklist()">
-        <option value="">Todos</option>
-        <option>Coordenador</option>
-        <option>Pablo</option>
-        <option>Lucas</option>
-        <option>Erika</option>
-      </select>
+  <!-- GDRIVE STATUS -->
+  <div class="gdrive-banner">
+    <div class="gdrive-info">
+      <strong>Google Drive</strong>
+      <span id="drive-detail">Conecte sua conta para salvar e sincronizar os dados automaticamente.</span>
     </div>
-    <div class="fg"><label>Filtrar por produto</label>
-      <select id="filter-prod" onchange="renderChecklist()">
-        <option value="">Todos</option>
-      </select>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span class="sync-status sync-no" id="sync-badge">Desconectado</span>
+      <button class="btn btn-sm" onclick="saveToGDrive()" id="btn-save-drive" style="display:none">Salvar agora</button>
     </div>
-    <div class="fg" style="margin-left:auto;flex-direction:row;align-items:flex-end;gap:8px">
-      <div class="legend">
-        <span><span class="leg-dot" style="background:#639922"></span>Concluído</span>
-        <span><span class="leg-dot" style="background:#EF9F27"></span>Pendente</span>
+  </div>
+
+  <!-- SETUP BOX (shown when CLIENT_ID not configured) -->
+  <div class="setup-box" id="setup-box" style="display:none">
+    <strong>⚙ Configure o Client ID do Google para ativar o Drive</strong>
+    Siga os passos abaixo uma única vez:<br>
+    <ol>
+      <li>Acesse <a href="https://console.cloud.google.com" target="_blank" style="color:var(--amber)">console.cloud.google.com</a></li>
+      <li>Crie um projeto → APIs e Serviços → Credenciais</li>
+      <li>Crie um "ID do cliente OAuth 2.0" do tipo "Aplicativo da Web"</li>
+      <li>Em "Origens JavaScript autorizadas" adicione o endereço onde abrirá este arquivo</li>
+      <li>Copie o Client ID e cole abaixo:</li>
+    </ol>
+    <input type="text" id="client-id-input" placeholder="Cole aqui o Client ID (ex: 123456789-abc.apps.googleusercontent.com)">
+    <button class="btn btn-p" onclick="saveClientId()" style="margin-top:8px">Salvar e ativar</button>
+  </div>
+
+  <!-- METRICS -->
+  <div class="metrics">
+    <div class="mc"><div class="mc-lbl">Total de horas</div><div class="mc-val" id="m-h">0h</div><div class="mc-sub">em horas extras</div></div>
+    <div class="mc"><div class="mc-lbl">Sessões realizadas</div><div class="mc-val" id="m-s">0</div><div class="mc-sub">dias trabalhados</div></div>
+    <div class="mc"><div class="mc-lbl">Progresso geral</div><div class="mc-val" id="m-t">0%</div><div class="mc-sub">de todas as tarefas</div></div>
+    <div class="mc"><div class="mc-lbl">Produtos 100%</div><div class="mc-val" id="m-p">0/81</div><div class="mc-sub">totalmente concluídos</div></div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab on" onclick="sw('visao')">Visão geral</button>
+    <button class="tab" onclick="sw('tabela')">Tabela de produtos</button>
+    <button class="tab" onclick="sw('sessao')">Registrar sessão</button>
+    <button class="tab" onclick="sw('historico')">Histórico</button>
+    <button class="tab" onclick="sw('relatorio')">Relatório</button>
+  </div>
+
+  <!-- VISÃO GERAL -->
+  <div class="sec on" id="sec-visao">
+    <div class="person-grid" id="person-cards"></div>
+    <div class="card">
+      <div class="card-ttl">Progresso por tarefa — de 81 produtos</div>
+      <div id="task-bars"></div>
+    </div>
+  </div>
+
+  <!-- TABELA -->
+  <div class="sec" id="sec-tabela">
+    <div class="card">
+      <div class="sel-row">
+        <div class="fg"><label>Buscar produto</label><input type="text" id="search-prod" placeholder="Nome do produto..." oninput="renderTable()"></div>
+        <div class="fg"><label>Filtrar</label>
+          <select id="filter-pct" onchange="renderTable()">
+            <option value="">Todos os produtos</option>
+            <option value="100">100% concluídos</option>
+            <option value="67">Acima de 67%</option>
+            <option value="below">Abaixo de 67%</option>
+          </select>
+        </div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th style="min-width:180px">Produto</th>
+            <th class="tc">ENG</th><th class="tc">CUST</th><th class="tc">PLANOS</th>
+            <th class="tc">FICHA</th><th class="tc">CAT</th><th class="tc">FOTO</th>
+            <th class="tc">MED</th><th class="tc">3D</th><th class="tc">RENDER</th>
+            <th style="min-width:100px;text-align:right">Progresso</th>
+          </tr></thead>
+          <tbody id="prod-tbody"></tbody>
+        </table>
       </div>
     </div>
   </div>
-  <div id="checklist-wrap"></div>
-</div>
 
-<div class="sec" id="sec-sessao">
-  <div class="card">
-    <div class="card-ttl">Registrar sessão de horas extras</div>
-    <div class="form-row" style="grid-template-columns:1fr 1fr 1fr 1fr auto">
-      <div class="fg"><label>Data</label><input type="date" id="s-date"></div>
-      <div class="fg"><label>Pessoa</label>
-        <select id="s-person">
-          <option>Coordenador</option><option>Pablo</option><option>Lucas</option><option>Erika</option>
-        </select>
+  <!-- SESSÃO -->
+  <div class="sec" id="sec-sessao">
+    <div class="card">
+      <div class="card-ttl">Nova sessão de horas extras</div>
+      <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
+        <div class="fg"><label>Data</label><input type="date" id="s-date"></div>
+        <div class="fg"><label>Responsável</label>
+          <select id="s-person">
+            <option>Coordenador</option><option>Pablo</option><option>Lucas</option><option>Erika</option>
+          </select>
+        </div>
+        <div class="fg"><label>Horas trabalhadas</label><input type="number" id="s-hours" min="0.5" max="12" step="0.5" placeholder="2.5"></div>
       </div>
-      <div class="fg"><label>Horas</label><input type="number" id="s-hours" min="0.5" max="12" step="0.5" placeholder="2.5"></div>
-      <div class="fg"><label>Produtos trabalhados</label><input type="text" id="s-prods" placeholder="ex: NARA, ORBIT"></div>
-      <button class="btn btn-p" onclick="addSession()" style="align-self:flex-end">+ Registrar</button>
-    </div>
-    <div class="form-row" style="grid-template-columns:1fr">
-      <div class="fg"><label>O que foi feito</label><input type="text" id="s-desc" placeholder="Descreva as atividades realizadas nesta sessão"></div>
+      <div class="form-row" style="grid-template-columns:1fr 1fr">
+        <div class="fg"><label>Produto trabalhado</label>
+          <select id="s-prod" onchange="renderTaskChecks()"><option value="">Selecione o produto...</option></select>
+        </div>
+        <div class="fg"><label>Observação</label><input type="text" id="s-desc" placeholder="Detalhe da atividade..."></div>
+      </div>
+      <div id="task-checks" style="margin-top:4px">
+        <div style="font-size:13px;color:var(--text3);font-family:Arial,sans-serif">Selecione um produto para ver as tarefas disponíveis.</div>
+      </div>
+      <button class="btn btn-p" style="margin-top:14px" onclick="addSession()">+ Registrar sessão</button>
     </div>
   </div>
-</div>
 
-<div class="sec" id="sec-historico">
-  <div class="card">
-    <div class="card-ttl">Histórico por pessoa</div>
-    <div class="sel-row">
-      <select id="h-filter" onchange="renderHistory()">
-        <option value="">Todas as pessoas</option>
-        <option>Coordenador</option><option>Pablo</option><option>Lucas</option><option>Erika</option>
-      </select>
-    </div>
-    <div id="hist-tbl"><div class="empty">Nenhuma sessão registrada.</div></div>
-    <div class="chart-wrap">
-      <canvas id="hchart" role="img" aria-label="Gráfico de horas extras por pessoa e dia">Horas por sessão registrada.</canvas>
+  <!-- HISTÓRICO -->
+  <div class="sec" id="sec-historico">
+    <div class="card">
+      <div class="sel-row">
+        <div class="fg"><label>Filtrar por pessoa</label>
+          <select id="h-filter" onchange="renderHistory()">
+            <option value="">Todas as pessoas</option>
+            <option>Coordenador</option><option>Pablo</option><option>Lucas</option><option>Erika</option>
+          </select>
+        </div>
+      </div>
+      <div id="hist-tbl"><div class="empty">Nenhuma sessão registrada ainda.</div></div>
+      <div class="chart-wrap"><canvas id="hchart"></canvas></div>
     </div>
   </div>
-</div>
 
-<div class="sec" id="sec-relatorio">
-  <div class="card">
-    <div class="card-ttl">Relatório para a direção</div>
-    <div id="rpt-out"><div class="empty">Registre sessões para gerar o relatório.</div></div>
-    <button class="btn" style="margin-top:8px" onclick="copyRpt()">Copiar relatório</button>
+  <!-- RELATÓRIO -->
+  <div class="sec" id="sec-relatorio">
+    <div class="card">
+      <div class="card-ttl">Relatório para a direção</div>
+      <div id="rpt-out"><div class="empty">Registre sessões para gerar o relatório.</div></div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn btn-p" onclick="copyRpt()">Copiar relatório</button>
+        <button class="btn" onclick="renderReport()">Atualizar</button>
+      </div>
+    </div>
   </div>
+
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
-const PEOPLE = [
-  {name:'Coordenador', tasks:['ENGENHARIA'], color:'#534AB7', bg:'#EEEDFE', tc:'#3C3489'},
-  {name:'Pablo',       tasks:['ENGENHARIA'], color:'#185FA5', bg:'#E6F1FB', tc:'#0C447C'},
-  {name:'Lucas',       tasks:['CATÁLOGO','FOTO','MEDIÇÕES','BLOCO 3D','RENDER'], color:'#0F6E56', bg:'#E1F5EE', tc:'#085041'},
-  {name:'Erika',       tasks:['CUSTOS','PLANOS AUXILIARES','FICHA TÉCNICA'], color:'#854F0B', bg:'#FAEEDA', tc:'#633806'},
-];
-
-const PRODUCTS = [
-  'NARA ST25-48','COMPOSET','DELFIM','OBELISCO','OLÍMPIA','BOÊMIA','LIVE (LIVERPOOL)','ORBIT','FILIPINAS POL'
-];
-
-const ALL_TASKS = [...new Set(PEOPLE.flatMap(p=>p.tasks))];
-
-let checks = JSON.parse(localStorage.getItem('s04v2_checks') || 'null') || buildDefaultChecks();
-let sessions = JSON.parse(localStorage.getItem('s04v2_sessions') || '[]');
+// ─── CONFIG ───────────────────────────────────────────
+const DRIVE_FILE_NAME = 'studyo4_dados.json';
+const DRIVE_FOLDER = 'Studyo4';
+let CLIENT_ID = localStorage.getItem('s04_client_id') || '';
+let accessToken = null;
+let driveFileId = null;
 let chartInst = null;
 
-function buildDefaultChecks(){
+// ─── DADOS FIXOS ──────────────────────────────────────
+const TASKS = ['ENGENHARIA','CUSTOS','PLANOS AUXILIARES','FICHA TÉCNICA','CATÁLOGO','FOTO','MEDIÇÕES','BLOCO 3D','RENDER'];
+const TASK_SHORT = ['ENG','CUST','PLANOS','FICHA','CAT','FOTO','MED','3D','RENDER'];
+
+const PEOPLE = [
+  {name:'Coordenador', color:'#4a2a7a', bg:'#ede7f6', tc:'#4a2a7a'},
+  {name:'Pablo',       color:'#1a5276', bg:'#d6eaf8', tc:'#1a5276'},
+  {name:'Lucas',       color:'#2d6a4f', bg:'#d8f3dc', tc:'#2d6a4f'},
+  {name:'Erika',       color:'#7d5a00', bg:'#fef3cd', tc:'#7d5a00'},
+];
+
+const O='ok', N='', X='nv';
+const RAW=[
+['NEW SPACE','SIM','SIM',O,O,O,O,O,O,O,O,O],
+['NOAH (NOVA) GOMADA E LISA','SIM','SIM',O,O,O,O,O,O,O,O,O],
+['ROOTS (NOVA)','SIM','SIM',O,O,O,O,O,O,O,O,O],
+['ANGELES / ST26-09 (NOVA)','SIM','',O,O,O,O,O,O,O,O,O],
+['AURA (NOVA)','SIM','SIM',O,O,O,O,O,O,O,O,O],
+['ENFALUX (NOVA)','SIM','SIM',O,O,O,O,O,O,O,O,O],
+['MOLINE','SIM','SIM',O,O,O,O,O,O,O,O,O],
+['ANNECY POL (NOVA)','SIM','SIM',O,O,O,O,O,O,O,O,O],
+['LILLY','SIM','',O,O,O,O,O,O,O,O,O],
+['LISBOA','SIM','',O,O,O,O,O,O,O,N,N],
+['NEW NICE','SIM','SIM',O,O,O,O,O,O,O,O,O],
+['NARA ST25-48','SIM','',O,O,O,N,O,O,O,N,N],
+['COMPOSET (NOVA)','SIM','SIM',O,O,O,N,O,O,O,N,N],
+['DELFIM','SIM','SIM',O,O,O,N,O,O,O,N,N],
+['OBELISCO (NOVA)','SIM','',O,O,O,N,O,O,O,N,N],
+['OLÍMPIA (NOVA)','SIM','SIM',O,O,O,N,O,O,O,N,N],
+['BOÊMIA (NOVA)','SIM','SIM',O,O,O,N,O,O,O,N,N],
+['LIVE (LIVERPOOL) (NOVA)','SIM','SIM',O,O,O,N,O,O,N,O,N],
+['ORBIT','','SIM',O,O,O,O,O,O,O,O,N],
+['FILIPINAS POL','','SIM',O,O,O,N,O,O,N,N,N],
+['BORA (NOVA)','SIM','',O,O,N,N,O,O,O,N,N],
+['MIAMI (NOVA)','SIM','',O,N,O,N,O,O,O,N,N],
+['LARC (NOVA)','SIM','',O,O,O,N,O,O,N,N,N],
+['LOUNGE (NOVA)','SIM','SIM',O,O,O,O,N,O,O,O,O],
+['SOTO (NOVA)','SIM','',O,O,O,N,O,O,N,N,N],
+['ZURIQUE (NOVA)','SIM','SIM',O,O,O,N,O,O,N,N,N],
+['ANNECY PUFF (NOVA)','SIM','SIM',O,O,O,N,O,O,N,N,N],
+['RIVOLI','','',O,O,O,O,O,O,O,N,N],
+['NOVELI','','',O,O,O,O,O,O,O,N,N],
+['FILIPINAS PUFF','SIM','SIM',O,O,O,N,O,N,N,N,N],
+['ATACAMA (NOVA)','SIM','',O,O,O,N,O,O,O,N,N],
+['BÁRBARA (NOVA)','SIM','SIM',O,O,O,N,X,O,O,N,N],
+['MOLITH ST26-137 (NOVA)','SIM','SIM',O,O,O,N,N,O,N,N,N],
+['RILEY ST26-33 (NOVA)','SIM','SIM',O,N,O,N,O,O,O,N,N],
+['SAKI ST117','SIM','',O,N,O,N,O,O,O,N,N],
+['OTHON','SIM','SIM',O,N,O,N,O,O,O,N,N],
+['URBANO ST25-156','SIM','',O,O,O,N,O,O,O,N,N],
+['LUI','SIM','SIM',O,N,O,N,O,O,N,N,N],
+['LUPE (NOVA)','SIM','SIM',O,N,O,N,O,O,N,N,N],
+['MAHAL','SIM','SIM',O,N,O,N,O,O,N,N,N],
+['TAKE','SIM','',O,O,O,N,O,O,N,N,N],
+['BOSSA POL','SIM','SIM',O,O,O,N,X,O,N,N,N],
+['BOSSA PUFF','SIM','SIM',O,O,O,N,X,O,N,N,N],
+['MISSISSIPI','SIM','',O,N,N,N,O,O,N,N,N],
+['ROCHE ST25-114','SIM','',O,N,N,N,O,O,N,N,N],
+['SANDRA','SIM','SIM',O,N,N,N,O,O,N,N,N],
+['NEKA','SIM','SIM',N,N,N,N,O,O,O,N,N],
+['PEÔNIA','SIM','',N,N,N,N,O,O,O,N,N],
+['BELTA','SIM','SIM',O,N,N,N,O,O,O,N,N],
+['FENDA','SIM','',O,N,N,N,O,O,O,N,N],
+['LOTUS','SIM','',O,N,N,N,O,O,O,N,N],
+['REBECA ST26-35','SIM','',O,O,N,N,X,O,O,N,N],
+['CLARC','SIM','',N,N,N,N,O,O,O,N,N],
+['MAFE','SIM','',O,N,N,N,O,O,O,N,N],
+['JANGADA','SIM','',N,N,N,N,O,O,O,N,N],
+['KUKENAN (NOVA)','SIM','',O,N,N,N,O,O,N,N,N],
+['FONTANA','SIM','',O,N,N,N,O,O,N,N,N],
+['BRIC','SIM','',O,N,N,N,O,O,N,N,N],
+['DOMOS','SIM','SIM',O,N,O,N,O,O,N,N,N],
+['OMNI','SIM','',O,N,N,N,O,O,N,N,N],
+['TANGERINA','SIM','SIM',O,N,N,N,O,O,N,N,N],
+['COOL','SIM','',N,N,N,N,O,O,O,N,N],
+['MUFFIN','SIM','',O,N,O,N,O,O,N,N,N],
+['VALENTINA','SIM','SIM',O,N,O,N,X,O,N,N,N],
+['DONNA','SIM','',N,N,N,O,O,O,O,N,N],
+['TELLES','SIM','',O,N,O,N,O,O,N,N,N],
+['SCOTT','SIM','',O,N,N,N,O,O,N,N,N],
+['LORETA','SIM','SIM',N,N,N,N,O,O,N,N,N],
+['GOMOS VIVENCE','SIM','',O,N,N,N,N,O,N,N,N],
+['FLAT','SIM','',N,N,N,N,N,O,O,N,N],
+['LIA','SIM','',N,N,N,N,N,O,O,N,N],
+['AMETISTA','SIM','',N,N,N,N,O,O,N,N,N],
+['GLAM PUFF','SIM','',N,N,N,N,O,O,O,N,N],
+['YUMI PUFF','SIM','',N,N,N,N,O,O,O,N,N],
+['SCOTT ÁREA EXTERNA','SIM','',N,N,N,N,O,O,N,N,N],
+['LUX','SIM','',O,N,N,N,N,N,N,N,N],
+['MARSEILLE','SIM','SIM',N,N,N,N,O,O,N,N,N],
+['HUGO','SIM','',N,N,N,N,N,O,N,N,N],
+['TRULY','SIM','',N,N,N,N,N,N,N,N,N],
+['ST26-49','SIM','',O,O,N,N,N,N,N,N,N],
+['PUGLIA ST26-47','SIM','',O,O,N,N,O,N,N,N,N],
+];
+
+const PRODUCTS = RAW.map(r=>r[0]);
+
+// ─── ESTADO ───────────────────────────────────────────
+function buildDefaults(){
   const c={};
-  PRODUCTS.forEach(prod=>{
-    c[prod]={};
-    const initOk = ['NARA ST25-48','COMPOSET','DELFIM','OBELISCO','OLÍMPIA','BOÊMIA','LIVE (LIVERPOOL)'].includes(prod);
-    const orbitOk = prod==='ORBIT';
-    PEOPLE.forEach(p=>{
-      p.tasks.forEach(t=>{
-        const key=prod+'||'+p.name+'||'+t;
-        if(p.name==='Lucas'){
-          c[prod][p.name+'||'+t] = (initOk && ['CATÁLOGO','FOTO','MEDIÇÕES'].includes(t)) || (orbitOk);
-        } else if(p.name==='Erika'){
-          c[prod][p.name+'||'+t] = initOk || orbitOk;
-        } else {
-          c[prod][p.name+'||'+t] = initOk || orbitOk;
-        }
-      });
+  RAW.forEach(r=>{
+    c[r[0]]={};
+    TASKS.forEach((t,i)=>{
+      const v=r[i+3];
+      c[r[0]][t]=v===O?true:(v===X?'nv':false);
     });
   });
   return c;
 }
 
-function save(){
-  localStorage.setItem('s04v2_checks', JSON.stringify(checks));
-  localStorage.setItem('s04v2_sessions', JSON.stringify(sessions));
+let checks = JSON.parse(localStorage.getItem('s04v5_checks')||'null') || buildDefaults();
+let sessions = JSON.parse(localStorage.getItem('s04v5_sessions')||'[]');
+
+function saveLocal(){
+  localStorage.setItem('s04v5_checks', JSON.stringify(checks));
+  localStorage.setItem('s04v5_sessions', JSON.stringify(sessions));
 }
 
-document.getElementById('hdr-date').textContent = new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
-document.getElementById('s-date').value = new Date().toISOString().slice(0,10);
-
-const prodSel = document.getElementById('filter-prod');
-PRODUCTS.forEach(p=>{const o=document.createElement('option');o.textContent=p;prodSel.appendChild(o);});
-
-function sw(t){
-  document.querySelectorAll('.tab').forEach((el,i)=>{
-    const ts=['visao','checklist','sessao','historico','relatorio'];
-    el.classList.toggle('on',ts[i]===t);
+// ─── GOOGLE AUTH ──────────────────────────────────────
+function initGoogleAuth(){
+  if(!CLIENT_ID){ document.getElementById('setup-box').style.display='block'; return; }
+  google.accounts.id.initialize({
+    client_id: CLIENT_ID,
+    callback: handleCredentialResponse,
+    auto_select: false,
   });
+  google.accounts.id.renderButton(document.getElementById('google-btn'),{theme:'outline',size:'small',text:'signin_with'});
+
+  // Also init token client for Drive access
+  window.tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: 'https://www.googleapis.com/auth/drive.file',
+    callback: async (resp) => {
+      if(resp.error) return;
+      accessToken = resp.access_token;
+      setConnected(true);
+      await loadFromGDrive();
+    }
+  });
+}
+
+function handleCredentialResponse(response){
+  window.tokenClient.requestAccessToken({prompt:''});
+}
+
+function signOut(){
+  accessToken=null; driveFileId=null;
+  google.accounts.id.disableAutoSelect();
+  setConnected(false);
+}
+
+function setConnected(on){
+  document.getElementById('auth-status').textContent = on ? 'Drive conectado' : 'Não conectado';
+  document.getElementById('auth-status').className = 'auth-status' + (on?' connected':'');
+  document.getElementById('btn-signout').style.display = on ? 'inline-block' : 'none';
+  document.getElementById('btn-save-drive').style.display = on ? 'inline-block' : 'none';
+  document.getElementById('sync-badge').textContent = on ? 'Conectado' : 'Desconectado';
+  document.getElementById('sync-badge').className = 'sync-status ' + (on ? 'sync-ok' : 'sync-no');
+  document.getElementById('drive-detail').textContent = on
+    ? 'Dados sendo salvos na sua pasta Studyo4 no Google Drive.'
+    : 'Conecte sua conta para salvar e sincronizar os dados automaticamente.';
+}
+
+function setSyncing(on){
+  document.getElementById('sync-badge').textContent = on ? 'Salvando...' : 'Sincronizado';
+  document.getElementById('sync-badge').className = 'sync-status ' + (on ? 'sync-ing' : 'sync-ok');
+}
+
+function saveClientId(){
+  const val = document.getElementById('client-id-input').value.trim();
+  if(!val){alert('Cole o Client ID!');return;}
+  localStorage.setItem('s04_client_id', val);
+  CLIENT_ID = val;
+  document.getElementById('setup-box').style.display='none';
+  initGoogleAuth();
+}
+
+// ─── GOOGLE DRIVE ─────────────────────────────────────
+async function driveRequest(method, url, body){
+  const headers = {'Authorization':'Bearer '+accessToken};
+  if(body && typeof body === 'string') headers['Content-Type']='application/json';
+  const res = await fetch(url, {method, headers, body: body||undefined});
+  return res.ok ? res : null;
+}
+
+async function findOrCreateFolder(){
+  const q = encodeURIComponent(`name='${DRIVE_FOLDER}' and mimeType='application/vnd.google-apps.folder' and trashed=false`);
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}`, {headers:{Authorization:'Bearer '+accessToken}});
+  const data = await res.json();
+  if(data.files&&data.files.length>0) return data.files[0].id;
+  const create = await fetch('https://www.googleapis.com/drive/v3/files',{
+    method:'POST', headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
+    body: JSON.stringify({name:DRIVE_FOLDER, mimeType:'application/vnd.google-apps.folder'})
+  });
+  const folder = await create.json();
+  return folder.id;
+}
+
+async function findDataFile(folderId){
+  const q = encodeURIComponent(`name='${DRIVE_FILE_NAME}' and '${folderId}' in parents and trashed=false`);
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}`,{headers:{Authorization:'Bearer '+accessToken}});
+  const data = await res.json();
+  return data.files&&data.files.length>0 ? data.files[0].id : null;
+}
+
+async function saveToGDrive(){
+  if(!accessToken){alert('Conecte ao Google primeiro.');return;}
+  setSyncing(true);
+  try{
+    const payload = JSON.stringify({checks, sessions, saved: new Date().toISOString()});
+    const folderId = await findOrCreateFolder();
+    if(!driveFileId) driveFileId = await findDataFile(folderId);
+
+    if(driveFileId){
+      await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`,{
+        method:'PATCH', headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
+        body: payload
+      });
+    } else {
+      const meta = {name:DRIVE_FILE_NAME, parents:[folderId]};
+      const form = new FormData();
+      form.append('metadata', new Blob([JSON.stringify(meta)],{type:'application/json'}));
+      form.append('file', new Blob([payload],{type:'application/json'}));
+      const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{
+        method:'POST', headers:{Authorization:'Bearer '+accessToken}, body:form
+      });
+      const f = await res.json();
+      driveFileId = f.id;
+    }
+    setSyncing(false);
+    document.getElementById('drive-detail').textContent = 'Salvo em: ' + new Date().toLocaleString('pt-BR');
+  }catch(e){
+    setSyncing(false);
+    document.getElementById('sync-badge').textContent='Erro ao salvar';
+    document.getElementById('sync-badge').className='sync-status sync-no';
+    console.error(e);
+  }
+}
+
+async function loadFromGDrive(){
+  if(!accessToken) return;
+  try{
+    const folderId = await findOrCreateFolder();
+    driveFileId = await findDataFile(folderId);
+    if(!driveFileId){saveToGDrive();return;}
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`,{headers:{Authorization:'Bearer '+accessToken}});
+    const data = await res.json();
+    if(data.checks) checks = data.checks;
+    if(data.sessions) sessions = data.sessions;
+    saveLocal();
+    renderAll();
+    document.getElementById('drive-detail').textContent = 'Carregado do Drive: ' + new Date(data.saved).toLocaleString('pt-BR');
+  }catch(e){console.error(e);}
+}
+
+// auto-save on change
+function saveAll(){
+  saveLocal();
+  if(accessToken) saveToGDrive();
+}
+
+// ─── HELPERS ──────────────────────────────────────────
+const isOk=(p,t)=>checks[p]&&checks[p][t]===true;
+const isNv=(p,t)=>checks[p]&&checks[p][t]==='nv';
+const barColor=pct=>pct===100?'#2d6a4f':pct>=67?'#1a5276':pct>=33?'#c07800':'#922b21';
+
+function prodPct(prod){
+  let done=0,total=0;
+  TASKS.forEach(t=>{if(!isNv(prod,t)){total++;if(isOk(prod,t))done++;}});
+  return total?Math.round(done/total*100):0;
+}
+
+function taskTotal(task){return PRODUCTS.filter(p=>isOk(p,task)).length;}
+
+function overallPct(){
+  let done=0,total=0;
+  PRODUCTS.forEach(prod=>TASKS.forEach(t=>{if(!isNv(prod,t)){total++;if(isOk(prod,t))done++;}}));
+  return total?Math.round(done/total*100):0;
+}
+
+function completedProds(){
+  return PRODUCTS.filter(p=>TASKS.every(t=>isOk(p,t)||isNv(p,t))).length;
+}
+
+// ─── TABS ─────────────────────────────────────────────
+function sw(t){
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('on',['visao','tabela','sessao','historico','relatorio'][i]===t));
   document.querySelectorAll('.sec').forEach(el=>el.classList.remove('on'));
   document.getElementById('sec-'+t).classList.add('on');
-  if(t==='visao') renderVisao();
-  if(t==='checklist') renderChecklist();
+  if(t==='visao')renderVisao();
+  if(t==='tabela')renderTable();
+  if(t==='sessao')renderTaskChecks();
   if(t==='historico'){renderHistory();renderChart();}
-  if(t==='relatorio') renderReport();
+  if(t==='relatorio')renderReport();
 }
 
-function personProgress(pname){
-  const p=PEOPLE.find(x=>x.name===pname);
-  let total=0,done=0;
-  PRODUCTS.forEach(prod=>{
-    p.tasks.forEach(t=>{
-      total++;
-      if(checks[prod]&&checks[prod][pname+'||'+t]) done++;
-    });
-  });
-  return total?Math.round(done/total*100):0;
-}
-
-function overallProgress(){
-  let total=0,done=0;
-  PRODUCTS.forEach(prod=>{
-    PEOPLE.forEach(p=>{
-      p.tasks.forEach(t=>{
-        total++;
-        if(checks[prod]&&checks[prod][p.name+'||'+t]) done++;
-      });
-    });
-  });
-  return total?Math.round(done/total*100):0;
-}
-
-function completedProducts(){
-  return PRODUCTS.filter(prod=>{
-    return PEOPLE.every(p=>p.tasks.every(t=>checks[prod]&&checks[prod][p.name+'||'+t]));
-  }).length;
-}
-
+// ─── RENDER MÉTRICAS ──────────────────────────────────
 function renderMetrics(){
-  const totalH = sessions.reduce((s,x)=>s+x.hours,0);
-  document.getElementById('m-h').textContent = totalH.toFixed(1)+'h';
-  document.getElementById('m-s').textContent = sessions.length;
-  document.getElementById('m-t').textContent = overallProgress()+'%';
-  document.getElementById('m-p').textContent = completedProducts()+'/'+PRODUCTS.length;
+  const h=sessions.reduce((s,x)=>s+x.hours,0);
+  document.getElementById('m-h').textContent=h.toFixed(1)+'h';
+  document.getElementById('m-s').textContent=sessions.length;
+  document.getElementById('m-t').textContent=overallPct()+'%';
+  document.getElementById('m-p').textContent=completedProds()+'/81';
 }
 
+// ─── VISÃO GERAL ──────────────────────────────────────
 function renderVisao(){
   renderMetrics();
-  const el=document.getElementById('person-cards');
-  el.innerHTML=PEOPLE.map(p=>{
-    const pct=personProgress(p.name);
-    const totalTasks=p.tasks.length*PRODUCTS.length;
-    let doneTasks=0;
-    PRODUCTS.forEach(prod=>{p.tasks.forEach(t=>{if(checks[prod]&&checks[prod][p.name+'||'+t])doneTasks++;});});
+  document.getElementById('person-cards').innerHTML=PEOPLE.map(p=>{
+    let done=0,total=0;
+    PRODUCTS.forEach(prod=>TASKS.forEach(t=>{if(!isNv(prod,t)){total++;if(isOk(prod,t))done++;}}));
+    // all tasks for all people now
+    const pct=total?Math.round(done/total*100):0;
     const ini=p.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    const bc=barColor(pct);
     return`<div class="person-card">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
         <div class="avatar" style="background:${p.bg};color:${p.tc}">${ini}</div>
-        <div><div class="pname">${p.name}</div><div class="prole">${doneTasks}/${totalTasks} tarefas</div></div>
-        <div style="margin-left:auto;font-size:20px;font-weight:500;color:${p.color}">${pct}%</div>
+        <div style="flex:1"><div class="pname">${p.name}</div><div class="prole">${done}/${total} tarefas OK</div></div>
+        <div style="font-size:22px;color:${bc}">${pct}%</div>
       </div>
-      <div class="pbar"><div class="pfill" style="width:${pct}%;background:${p.color}"></div></div>
-      <div style="margin-top:8px">${p.tasks.map(t=>`<span class="task-chip">${t}</span>`).join('')}</div>
+      <div class="pbar"><div class="pfill" style="width:${pct}%;background:${bc}"></div></div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('task-bars').innerHTML=TASKS.map((t,i)=>{
+    const done=taskTotal(t);
+    const pct=Math.round(done/81*100);
+    const bc=barColor(pct);
+    return`<div class="pbar-wrap">
+      <div class="pbar-row">
+        <span>${t}</span>
+        <span style="color:${bc}">${done}/81 &nbsp;${pct}%</span>
+      </div>
+      <div class="pbar"><div class="pfill" style="width:${pct}%;background:${bc}"></div></div>
     </div>`;
   }).join('');
 }
 
-function renderChecklist(){
-  renderMetrics();
-  const fp=document.getElementById('filter-person').value;
-  const fprod=document.getElementById('filter-prod').value;
-  const people=fp?PEOPLE.filter(p=>p.name===fp):PEOPLE;
-  const prods=fprod?[fprod]:PRODUCTS;
-  const el=document.getElementById('checklist-wrap');
+// ─── TABELA ───────────────────────────────────────────
+function badgeHtml(val){
+  if(val===true) return`<span class="ok-b">OK</span>`;
+  if(val==='nv') return`<span class="nv-b">N/A</span>`;
+  return`<span class="no-b">—</span>`;
+}
 
-  let html='';
-  prods.forEach(prod=>{
-    let prodDone=0,prodTotal=0;
-    people.forEach(p=>p.tasks.forEach(t=>{prodTotal++;if(checks[prod]&&checks[prod][p.name+'||'+t])prodDone++;}));
-    const pct=prodTotal?Math.round(prodDone/prodTotal*100):0;
-    const barColor=pct===100?'#639922':pct>=67?'#378ADD':'#EF9F27';
-    html+=`<div class="card" style="margin-bottom:10px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div style="font-size:14px;font-weight:500;color:var(--color-text-primary)">${prod}</div>
-        <div style="font-size:13px;font-weight:500;color:${barColor}">${pct}%</div>
-      </div>
-      <div class="pbar" style="margin-bottom:12px"><div class="pfill" style="width:${pct}%;background:${barColor}"></div></div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px">`;
-    people.forEach(p=>{
-      p.tasks.forEach(t=>{
-        const key=p.name+'||'+t;
-        const done=checks[prod]&&checks[prod][key];
-        const ini=p.name.split(' ').map(w=>w[0]).join('').slice(0,2);
-        html+=`<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--color-text-secondary);padding:4px 6px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary)">
-          <input type="checkbox" class="ck" ${done?'checked':''} onchange="toggle('${prod}','${key}',this.checked)">
-          <span style="font-size:10px;font-weight:500;color:${p.tc||'#888'};background:${p.bg||'#eee'};padding:1px 5px;border-radius:99px">${ini}</span>
-          ${t}
-        </label>`;
-      });
-    });
-    html+=`</div></div>`;
+function renderTable(){
+  const search=(document.getElementById('search-prod').value||'').toLowerCase();
+  const fp=document.getElementById('filter-pct').value;
+  let prods=PRODUCTS.filter(p=>{
+    if(search&&!p.toLowerCase().includes(search))return false;
+    const pct=prodPct(p);
+    if(fp==='100'&&pct<100)return false;
+    if(fp==='67'&&pct<67)return false;
+    if(fp==='below'&&pct>=67)return false;
+    return true;
   });
-  el.innerHTML=html||'<div class="empty">Nenhum item.</div>';
+  document.getElementById('prod-tbody').innerHTML=prods.map(prod=>{
+    const pct=prodPct(prod);
+    const bc=barColor(pct);
+    return`<tr>
+      <td style="font-weight:600;font-size:12px">${prod}</td>
+      ${TASKS.map(t=>`<td class="tc">${badgeHtml(checks[prod]?checks[prod][t]:false)}</td>`).join('')}
+      <td style="text-align:right">
+        <div class="pct-bar">
+          <div class="mini-bar"><div class="mini-fill" style="width:${pct}%;background:${bc}"></div></div>
+          <span style="font-weight:600;color:${bc};min-width:34px;text-align:right">${pct}%</span>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
 }
 
-function toggle(prod,key,val){
-  if(!checks[prod]) checks[prod]={};
-  checks[prod][key]=val;
-  save();
-  renderMetrics();
-  renderVisao();
+// ─── SESSÃO ───────────────────────────────────────────
+function renderTaskChecks(){
+  const prod=document.getElementById('s-prod').value;
+  const el=document.getElementById('task-checks');
+  if(!prod){el.innerHTML='<div style="font-size:13px;color:var(--text3);font-family:Arial,sans-serif">Selecione um produto para ver as tarefas.</div>';return;}
+  el.innerHTML=`<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:8px;font-family:Arial,sans-serif">Tarefas — ${prod}</div>
+  <div class="ck-grid">${TASKS.map(t=>{
+    const val=checks[prod]?checks[prod][t]:false;
+    if(val==='nv')return`<div class="nv-label">N/A &nbsp; ${t}</div>`;
+    const isDone=val===true;
+    return`<label class="ck-label ${isDone?'done':''}">
+      <input type="checkbox" class="ck" ${isDone?'checked':''} onchange="toggleTask('${prod}','${t}',this.checked)">
+      ${t}
+    </label>`;
+  }).join('')}</div>`;
 }
+
+function toggleTask(prod,task,val){
+  if(!checks[prod])checks[prod]={};
+  checks[prod][task]=val;
+  saveAll();renderMetrics();renderTaskChecks();
+}
+
+// Populate product select
+const sp=document.getElementById('s-prod');
+PRODUCTS.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;sp.appendChild(o);});
+document.getElementById('s-date').value=new Date().toISOString().slice(0,10);
 
 function addSession(){
   const date=document.getElementById('s-date').value;
   const person=document.getElementById('s-person').value;
   const hours=parseFloat(document.getElementById('s-hours').value);
+  const prod=document.getElementById('s-prod').value;
   const desc=document.getElementById('s-desc').value.trim();
-  const prods=document.getElementById('s-prods').value.trim();
-  if(!date||!hours||!desc){alert('Preencha data, horas e descrição.');return;}
-  sessions.push({date,person,hours,desc,prods,ts:Date.now()});
+  if(!date||!hours||!prod){alert('Preencha data, horas e produto.');return;}
+  const tasksDone=TASKS.filter(t=>isOk(prod,t));
+  sessions.push({date,person,hours,prod,desc,tasksDone,ts:Date.now()});
   sessions.sort((a,b)=>a.date.localeCompare(b.date));
-  save();
-  renderMetrics();
+  saveAll();renderMetrics();
   document.getElementById('s-hours').value='';
   document.getElementById('s-desc').value='';
-  document.getElementById('s-prods').value='';
-  alert('Sessão registrada!');
+  document.getElementById('s-prod').value='';
+  document.getElementById('task-checks').innerHTML='<div style="font-size:13px;color:var(--text3);font-family:Arial,sans-serif">Sessão registrada! Selecione outro produto para continuar.</div>';
+  alert('Sessão registrada com sucesso!');
 }
 
+// ─── HISTÓRICO ────────────────────────────────────────
 function renderHistory(){
   const fp=document.getElementById('h-filter').value;
   const list=fp?sessions.filter(s=>s.person===fp):sessions;
   const el=document.getElementById('hist-tbl');
-  if(!list.length){el.innerHTML='<div class="empty">Nenhuma sessão.</div>';return;}
-  const rows=[...list].reverse().map((s,ri)=>{
-    const realIdx=sessions.indexOf(s);
+  if(!list.length){el.innerHTML='<div class="empty">Nenhuma sessão registrada.</div>';return;}
+  const rows=[...list].reverse().map(s=>{
+    const ri=sessions.indexOf(s);
     const d=new Date(s.date+'T12:00:00').toLocaleDateString('pt-BR');
-    const p=PEOPLE.find(x=>x.name===s.person)||{color:'#888',bg:'#eee',tc:'#444'};
-    const ini=s.person.split(' ').map(w=>w[0]).join('').slice(0,2);
+    const p=PEOPLE.find(x=>x.name===s.person)||{bg:'#eee',tc:'#444'};
     return`<tr>
-      <td style="width:90px">${d}</td>
-      <td style="width:120px"><span style="font-size:11px;font-weight:500;color:${p.tc};background:${p.bg};padding:2px 8px;border-radius:99px">${s.person}</span></td>
-      <td style="width:60px">${s.hours}h</td>
-      <td>${s.desc}</td>
-      <td style="width:120px;color:var(--color-text-secondary)">${s.prods||'—'}</td>
-      <td style="width:30px"><button class="del-btn" onclick="delSession(${realIdx})">×</button></td>
+      <td style="width:85px;white-space:nowrap">${d}</td>
+      <td style="width:120px"><span class="pill" style="background:${p.bg};color:${p.tc}">${s.person}</span></td>
+      <td style="width:50px">${s.hours}h</td>
+      <td style="width:140px;font-weight:600;font-size:12px">${s.prod}</td>
+      <td style="font-size:12px;color:var(--text2)">${s.desc||'—'}</td>
+      <td style="width:30px"><button class="del-btn" onclick="delSession(${ri})">×</button></td>
     </tr>`;
   }).join('');
-  el.innerHTML=`<table class="session-tbl"><thead><tr><th>Data</th><th>Pessoa</th><th>Horas</th><th>Atividade</th><th>Produtos</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+  el.innerHTML=`<table><thead><tr><th>Data</th><th>Pessoa</th><th>Horas</th><th>Produto</th><th>Observação</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 function delSession(i){
   if(!confirm('Remover este registro?'))return;
-  sessions.splice(i,1);
-  save();
-  renderMetrics();
-  renderHistory();
-  renderChart();
+  sessions.splice(i,1);saveAll();renderMetrics();renderHistory();renderChart();
 }
 
 function renderChart(){
   const canvas=document.getElementById('hchart');
   if(!sessions.length){canvas.style.display='none';return;}
   canvas.style.display='block';
-  const colors={'Coordenador':'#534AB7','Pablo':'#378ADD','Lucas':'#1D9E75','Erika':'#BA7517'};
+  const colors={Coordenador:'#7c5cbf',Pablo:'#2980b9',Lucas:'#27ae60',Erika:'#e67e22'};
   const dates=[...new Set(sessions.map(s=>s.date))].sort();
   const datasets=PEOPLE.map(p=>({
     label:p.name,
     data:dates.map(d=>sessions.filter(s=>s.date===d&&s.person===p.name).reduce((a,s)=>a+s.hours,0)),
-    backgroundColor:colors[p.name]||'#888',
-    borderRadius:3,
+    backgroundColor:colors[p.name],borderRadius:4,
   }));
   const labels=dates.map(d=>new Date(d+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}));
   if(chartInst)chartInst.destroy();
-  chartInst=new Chart(canvas,{
-    type:'bar',
-    data:{labels,datasets},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true,ticks:{stepSize:1}}}}
-  });
+  chartInst=new Chart(canvas,{type:'bar',data:{labels,datasets},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true,ticks:{stepSize:1}}}}});
 }
 
+// ─── RELATÓRIO ────────────────────────────────────────
 function renderReport(){
-  const el=document.getElementById('rpt-out');
   const totalH=sessions.reduce((s,x)=>s+x.hours,0);
   const hoje=new Date().toLocaleDateString('pt-BR');
-  const firstDate=sessions.length?new Date(sessions[0].date+'T12:00:00').toLocaleDateString('pt-BR'):'—';
-  const lastDate=sessions.length?new Date(sessions[sessions.length-1].date+'T12:00:00').toLocaleDateString('pt-BR'):'—';
-
+  const first=sessions.length?new Date(sessions[0].date+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+  const last=sessions.length?new Date(sessions[sessions.length-1].date+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+  const grupos={100:[],g67:[],g33:[],low:[]};
+  PRODUCTS.forEach(p=>{const pct=prodPct(p);if(pct===100)grupos[100].push(p);else if(pct>=67)grupos.g67.push(p);else if(pct>=33)grupos.g33.push(p);else grupos.low.push(p);});
   let txt=`RELATÓRIO DE HORAS EXTRAS — STUDYO4\n`;
-  txt+=`Gerado em: ${hoje} | Período: ${firstDate} a ${lastDate}\n`;
-  txt+=`${'─'.repeat(50)}\n\n`;
+  txt+=`Gerado em: ${hoje}   |   Período: ${first} a ${last}\n${'─'.repeat(52)}\n\n`;
   txt+=`RESUMO EXECUTIVO\n`;
-  txt+=`A equipe realizou ${sessions.length} sessão(ões) pós-expediente totalizando ${totalH.toFixed(1)}h extras.\n`;
-  txt+=`Progresso geral do portfólio: ${overallProgress()}% | Produtos 100% concluídos: ${completedProducts()}/${PRODUCTS.length}\n\n`;
-
-  txt+=`PROGRESSO POR RESPONSÁVEL\n`;
-  PEOPLE.forEach(p=>{
-    const pct=personProgress(p.name);
-    let doneTasks=0,totalTasks=p.tasks.length*PRODUCTS.length;
-    PRODUCTS.forEach(prod=>{p.tasks.forEach(t=>{if(checks[prod]&&checks[prod][p.name+'||'+t])doneTasks++;});});
-    txt+=`• ${p.name} (${p.tasks.join(', ')}): ${pct}% — ${doneTasks}/${totalTasks} tarefas\n`;
-  });
-
-  txt+=`\nPROGRESSO POR PRODUTO\n`;
-  PRODUCTS.forEach(prod=>{
-    let done=0,total=0;
-    PEOPLE.forEach(p=>p.tasks.forEach(t=>{total++;if(checks[prod]&&checks[prod][p.name+'||'+t])done++;}));
-    const pct=total?Math.round(done/total*100):0;
-    txt+=`• ${prod}: ${pct}% (${done}/${total})\n`;
-  });
-
+  txt+=`Sessões realizadas: ${sessions.length}   |   Total horas extras: ${totalH.toFixed(1)}h\n`;
+  txt+=`Progresso geral do portfólio: ${overallPct()}%   |   Produtos 100%: ${completedProds()}/81\n\n`;
+  txt+=`PROGRESSO POR TAREFA (de 81 produtos)\n`;
+  TASKS.forEach(t=>{const d=taskTotal(t);txt+=`• ${t}: ${d}/81 (${Math.round(d/81*100)}%)\n`;});
+  txt+=`\nPRODUTOS POR GRUPO\n`;
+  txt+=`Concluídos 100% (${grupos[100].length}): ${grupos[100].join(', ')||'nenhum'}\n`;
+  txt+=`Avançados 67-99% (${grupos.g67.length}): ${grupos.g67.join(', ')||'nenhum'}\n`;
+  txt+=`Em andamento 33-66% (${grupos.g33.length}): ${grupos.g33.join(', ')||'nenhum'}\n`;
+  txt+=`Iniciais 0-32% (${grupos.low.length}): ${grupos.low.join(', ')||'nenhum'}\n`;
   if(sessions.length){
     txt+=`\nREGISTRO DE SESSÕES\n`;
     sessions.forEach(s=>{
       const d=new Date(s.date+'T12:00:00').toLocaleDateString('pt-BR');
-      txt+=`• ${d} — ${s.person} (${s.hours}h): ${s.desc}${s.prods?' ['+s.prods+']':''}\n`;
+      txt+=`• ${d} — ${s.person} (${s.hours}h) | ${s.prod}${s.desc?' | '+s.desc:''}\n`;
     });
   }
-
-  txt+=`\n${'─'.repeat(50)}\nRelatório gerado automaticamente — Studyo4`;
-  el.innerHTML=`<div class="rpt-block">${txt}</div>`;
+  txt+=`\n${'─'.repeat(52)}\nGerado automaticamente — Studyo4`;
+  document.getElementById('rpt-out').innerHTML=`<div class="rpt-block">${txt}</div>`;
 }
 
 function copyRpt(){
-  const txt=document.getElementById('rpt-out').innerText;
-  navigator.clipboard.writeText(txt).then(()=>alert('Relatório copiado!')).catch(()=>alert('Selecione e copie manualmente.'));
+  navigator.clipboard.writeText(document.getElementById('rpt-out').innerText)
+    .then(()=>alert('Relatório copiado!'))
+    .catch(()=>alert('Selecione e copie manualmente.'));
 }
 
-renderVisao();
-renderMetrics();
+function renderAll(){renderVisao();renderMetrics();}
+
+// ─── INIT ─────────────────────────────────────────────
+window.addEventListener('load',()=>{
+  if(typeof google!=='undefined'&&google.accounts) initGoogleAuth();
+  else setTimeout(initGoogleAuth, 1500);
+  renderAll();
+});
 </script>
+</body>
+</html>
