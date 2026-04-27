@@ -142,6 +142,33 @@ tr:hover td{background:var(--surface2)}
   </div>
 </div>
 
+<!-- MODAL EDITAR SESSÃO -->
+<div id="edit-overlay" onclick="closeEditModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:600;align-items:center;justify-content:center">
+  <div onclick="event.stopPropagation()" style="background:var(--surface);border-radius:var(--radius);padding:1.5rem;width:480px;max-width:95vw;border:1px solid var(--border2)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">
+      <div style="font-size:15px;font-weight:700;color:var(--text)">Editar sessão</div>
+      <button onclick="closeEditModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text3)">×</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div class="fg"><label>Data</label><input type="date" id="edit-date"></div>
+      <div class="fg"><label>Pessoa</label>
+        <select id="edit-person">
+          <option>Junior</option><option>Pablo</option><option>Lucas</option><option>Erika</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div class="fg"><label>Horas</label><input type="number" id="edit-hours" min="0.5" max="12" step="0.5"></div>
+      <div class="fg"><label>Produto</label><input type="text" id="edit-prod" style="background:var(--surface2);color:var(--text2)" readonly></div>
+    </div>
+    <div class="fg" style="margin-bottom:1.25rem"><label>Observação</label><input type="text" id="edit-desc" placeholder="Observação..."></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px">
+      <button class="btn" onclick="closeEditModal()">Cancelar</button>
+      <button class="btn btn-p" onclick="saveEditSession()">Salvar alterações</button>
+    </div>
+  </div>
+</div>
+
 <!-- DRAWER -->
 <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
 <div class="drawer" id="drawer">
@@ -857,14 +884,49 @@ function renderHistory(){
       <td style="width:50px">${s.hours}h</td>
       <td style="width:150px;font-weight:600;font-size:12px"><span class="prod-link" onclick="openDrawer('${s.prod.replace(/'/g,"\\'")}');sw('tabela')">${s.prod}</span></td>
       <td style="font-size:11px;color:var(--text2)">${s.desc||'—'}</td>
-      <td style="width:28px"><button class="del-btn" onclick="delSession(${ri})">×</button></td>
+      <td style="width:56px;white-space:nowrap">
+        <button class="del-btn" title="Editar" onclick="openEditModal(${ri})" style="font-size:13px">✏️</button>
+        <button class="del-btn" title="Apagar" onclick="delSession(${ri})">×</button>
+      </td>
     </tr>`;
   }).join('');
   el.innerHTML=`<table><thead><tr><th>Data</th><th>Pessoa</th><th>Horas</th><th>Produto</th><th>Obs</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
+let editIndex=null;
+
+function openEditModal(i){
+  editIndex=i;
+  const s=sessions[i];
+  document.getElementById('edit-date').value=s.date;
+  document.getElementById('edit-person').value=s.person;
+  document.getElementById('edit-hours').value=s.hours;
+  document.getElementById('edit-prod').value=s.prod;
+  document.getElementById('edit-desc').value=s.desc||'';
+  const ov=document.getElementById('edit-overlay');
+  ov.style.display='flex';
+}
+
+function closeEditModal(){
+  document.getElementById('edit-overlay').style.display='none';
+  editIndex=null;
+}
+
+function saveEditSession(){
+  if(editIndex===null)return;
+  const date=document.getElementById('edit-date').value;
+  const person=document.getElementById('edit-person').value;
+  const hours=parseFloat(document.getElementById('edit-hours').value);
+  const desc=document.getElementById('edit-desc').value.trim();
+  if(!date||!hours){alert('Preencha data e horas.');return;}
+  sessions[editIndex]={...sessions[editIndex],date,person,hours,desc};
+  sessions.sort((a,b)=>a.date.localeCompare(b.date));
+  saveAll();renderMetrics();renderHistory();renderChart();
+  closeEditModal();
+}
+
 function delSession(i){
-  if(!confirm('Remover?'))return;
+  if(!confirm('Remover esta sessão?'))return;
   sessions.splice(i,1);saveAll();renderMetrics();renderHistory();renderChart();
 }
 
