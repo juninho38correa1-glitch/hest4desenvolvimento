@@ -232,18 +232,32 @@ tr:hover td{background:var(--surface2)}
       <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
         <div class="fg"><label>Data</label><input type="date" id="s-date"></div>
         <div class="fg"><label>Responsável</label>
-          <select id="s-person"><option>Coordenador</option><option>Pablo</option><option>Lucas</option><option>Erika</option></select>
+          <select id="s-person"><option>Junior</option><option>Pablo</option><option>Lucas</option><option>Erika</option></select>
         </div>
         <div class="fg"><label>Horas trabalhadas</label><input type="number" id="s-hours" min="0.5" max="12" step="0.5" placeholder="2.5"></div>
       </div>
-      <div class="form-row" style="grid-template-columns:1fr 1fr">
-        <div class="fg"><label>Produto trabalhado</label>
-          <select id="s-prod" onchange="renderTaskChecks()"><option value="">Selecione...</option></select>
-        </div>
-        <div class="fg"><label>Observação</label><input type="text" id="s-desc" placeholder="Detalhe da atividade..."></div>
+      <div class="form-row" style="grid-template-columns:1fr">
+        <div class="fg"><label>Observação geral da sessão</label><input type="text" id="s-desc" placeholder="Detalhe da atividade realizada nessa sessão..."></div>
       </div>
+
+      <!-- SELEÇÃO MÚLTIPLA DE PRODUTOS -->
+      <div style="margin-bottom:10px">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-family:Arial,sans-serif;margin-bottom:6px">Produtos trabalhados</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <input type="text" id="prod-search" placeholder="Buscar produto..." oninput="filterProdList()"
+            style="flex:1;height:34px;padding:0 10px;border:1px solid var(--border2);border-radius:var(--radius-sm);font-size:13px;background:var(--surface);color:var(--text);font-family:Arial,sans-serif;outline:none">
+          <button class="btn btn-sm" onclick="selectAllVisible()" style="white-space:nowrap">+ Todos visíveis</button>
+          <button class="btn btn-sm" onclick="clearProds()">Limpar</button>
+        </div>
+        <!-- chips dos selecionados -->
+        <div id="selected-chips" style="display:flex;flex-wrap:wrap;gap:6px;min-height:28px;margin-bottom:8px"></div>
+        <!-- lista de produtos -->
+        <div id="prod-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:5px;max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px;background:var(--bg)"></div>
+      </div>
+
+      <!-- TAREFAS DOS PRODUTOS SELECIONADOS -->
       <div id="task-checks" style="margin-top:4px">
-        <div style="font-size:13px;color:var(--text3);font-family:Arial,sans-serif">Selecione um produto para ver as tarefas.</div>
+        <div style="font-size:13px;color:var(--text3);font-family:Arial,sans-serif">Selecione os produtos acima para ver as tarefas.</div>
       </div>
       <button class="btn btn-p" style="margin-top:14px" onclick="addSession()">+ Registrar sessão</button>
     </div>
@@ -255,7 +269,7 @@ tr:hover td{background:var(--surface2)}
         <div class="fg"><label>Filtrar pessoa</label>
           <select id="h-filter" onchange="renderHistory()">
             <option value="">Todas</option>
-            <option>Coordenador</option><option>Pablo</option><option>Lucas</option><option>Erika</option>
+            <option>Junior</option><option>Pablo</option><option>Lucas</option><option>Erika</option>
           </select>
         </div>
       </div>
@@ -294,7 +308,7 @@ const DRIVE_FOLDER='Studyo4';
 const TASKS=['ENGENHARIA','CUSTOS','PLANOS AUXILIARES','FICHA TÉCNICA','CATÁLOGO','FOTO','MEDIÇÕES','BLOCO 3D','RENDER'];
 const TASK_SHORT=['ENG','CUST','PLANOS','FICHA','CAT','FOTO','MED','3D','RENDER'];
 const PEOPLE=[
-  {name:'Coordenador',color:'#4a2a7a',bg:'#ede7f6',tc:'#4a2a7a'},
+  {name:'Junior',color:'#4a2a7a',bg:'#ede7f6',tc:'#4a2a7a'},
   {name:'Pablo',color:'#1a5276',bg:'#d6eaf8',tc:'#1a5276'},
   {name:'Lucas',color:'#2d6a4f',bg:'#d8f3dc',tc:'#2d6a4f'},
   {name:'Erika',color:'#7d5a00',bg:'#fef3cd',tc:'#7d5a00'},
@@ -582,7 +596,7 @@ function sw(t){
   document.getElementById('sec-'+t).classList.add('on');
   if(t==='visao')renderVisao();
   if(t==='tabela')renderTable();
-  if(t==='sessao')renderTaskChecks();
+  if(t==='sessao'){renderProdList();renderChips();renderTaskChecks();}
   if(t==='historico'){renderHistory();renderChart();}
   if(t==='relatorio')renderReport();
   if(t==='colaborador')renderCollabTabs();
@@ -723,25 +737,79 @@ function saveObs(){
   },800);
 }
 
-// ─── SESSÃO ───────────────────────────────────────────
-const sp=document.getElementById('s-prod');
-PRODUCTS.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;sp.appendChild(o);});
+// ─── SESSÃO MULTI-PRODUTO ─────────────────────────────
+let selectedProds=new Set();
+
 document.getElementById('s-date').value=new Date().toISOString().slice(0,10);
 
-function renderTaskChecks(){
-  const prod=document.getElementById('s-prod').value;
-  const el=document.getElementById('task-checks');
-  if(!prod){el.innerHTML='<div style="font-size:13px;color:var(--text3);font-family:Arial,sans-serif">Selecione um produto para ver as tarefas.</div>';return;}
-  el.innerHTML=`<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:8px;font-family:Arial,sans-serif">Tarefas — ${prod}</div>
-  <div class="ck-grid">${TASKS.map(t=>{
-    const val=checks[prod]?checks[prod][t]:false;
-    if(val==='nv')return`<div class="nv-label">N/A · ${t}</div>`;
-    const isDone=val===true;
-    return`<label class="ck-label ${isDone?'done':''}">
-      <input type="checkbox" class="ck" ${isDone?'checked':''} onchange="toggleTask('${prod.replace(/'/g,"\\'")}','${t}',this.checked)">
-      ${t}
+function renderProdList(){
+  const search=(document.getElementById('prod-search')||{value:''}).value.toLowerCase();
+  const visible=PRODUCTS.filter(p=>!search||p.toLowerCase().includes(search));
+  document.getElementById('prod-list').innerHTML=visible.map(p=>{
+    const sel=selectedProds.has(p);
+    const pct=prodPct(p);const bc=barColor(pct);
+    return`<label style="display:flex;align-items:center;gap:7px;cursor:pointer;padding:5px 8px;border-radius:var(--radius-sm);border:1px solid ${sel?'#2d6a4f':' var(--border)'};background:${sel?'#d8f3dc':'var(--surface)'};font-size:12px;font-family:Arial,sans-serif;color:${sel?'#1b4332':'var(--text2)'};transition:all .1s">
+      <input type="checkbox" ${sel?'checked':''} onchange="toggleProd('${p.replace(/'/g,"\\'")}',this.checked)" style="accent-color:#2d6a4f;width:13px;height:13px;flex-shrink:0">
+      <span style="flex:1">${p}</span>
+      <span style="font-size:10px;font-weight:600;color:${bc}">${pct}%</span>
     </label>`;
-  }).join('')}</div>`;
+  }).join('');
+}
+
+function filterProdList(){renderProdList();}
+
+function toggleProd(prod,val){
+  if(val)selectedProds.add(prod);else selectedProds.delete(prod);
+  renderProdList();renderChips();renderTaskChecks();
+}
+
+function selectAllVisible(){
+  const search=(document.getElementById('prod-search')||{value:''}).value.toLowerCase();
+  PRODUCTS.filter(p=>!search||p.toLowerCase().includes(search)).forEach(p=>selectedProds.add(p));
+  renderProdList();renderChips();renderTaskChecks();
+}
+
+function clearProds(){
+  selectedProds.clear();
+  renderProdList();renderChips();renderTaskChecks();
+}
+
+function renderChips(){
+  const el=document.getElementById('selected-chips');
+  if(!selectedProds.size){el.innerHTML='<span style="font-size:12px;color:var(--text3);font-family:Arial,sans-serif">Nenhum produto selecionado</span>';return;}
+  el.innerHTML=[...selectedProds].map(p=>
+    `<span style="display:inline-flex;align-items:center;gap:5px;background:#d6eaf8;color:#1a5276;font-size:11px;font-weight:600;padding:3px 8px;border-radius:99px;font-family:Arial,sans-serif">
+      ${p}
+      <button onclick="toggleProd('${p.replace(/'/g,"\\'")}',false)" style="background:none;border:none;cursor:pointer;color:#1a5276;font-size:13px;line-height:1;padding:0">×</button>
+    </span>`
+  ).join('');
+}
+
+function renderTaskChecks(){
+  const el=document.getElementById('task-checks');
+  if(!selectedProds.size){
+    el.innerHTML='<div style="font-size:13px;color:var(--text3);font-family:Arial,sans-serif">Selecione os produtos acima para ver as tarefas.</div>';
+    return;
+  }
+  let html='';
+  [...selectedProds].forEach(prod=>{
+    const pct=prodPct(prod);const bc=barColor(pct);
+    html+=`<div style="margin-bottom:12px">
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:${bc};margin-bottom:6px;font-family:Arial,sans-serif;display:flex;align-items:center;gap:8px">
+        ${prod} <span style="font-weight:400;color:var(--text3)">${pct}%</span>
+      </div>
+      <div class="ck-grid">${TASKS.map(t=>{
+        const val=checks[prod]?checks[prod][t]:false;
+        if(val==='nv')return`<div class="nv-label">N/A · ${t}</div>`;
+        const isDone=val===true;
+        return`<label class="ck-label ${isDone?'done':''}">
+          <input type="checkbox" class="ck" ${isDone?'checked':''} onchange="toggleTask('${prod.replace(/'/g,"\\'")}','${t}',this.checked)">
+          ${t}
+        </label>`;
+      }).join('')}</div>
+    </div>`;
+  });
+  el.innerHTML=html;
 }
 
 function toggleTask(prod,task,val){
@@ -749,25 +817,28 @@ function toggleTask(prod,task,val){
   checks[prod][task]=val;
   if(val){if(!taskDates[prod])taskDates[prod]={};taskDates[prod][task]=new Date().toISOString().slice(0,10);}
   else{if(taskDates[prod])delete taskDates[prod][task];}
-  saveAll();renderMetrics();renderTaskChecks();
+  saveAll();renderMetrics();renderTaskChecks();renderProdList();
 }
 
 function addSession(){
   const date=document.getElementById('s-date').value;
   const person=document.getElementById('s-person').value;
   const hours=parseFloat(document.getElementById('s-hours').value);
-  const prod=document.getElementById('s-prod').value;
   const desc=document.getElementById('s-desc').value.trim();
-  if(!date||!hours||!prod){alert('Preencha data, horas e produto.');return;}
-  const tasksDone=TASKS.filter(t=>isOk(prod,t));
-  sessions.push({date,person,hours,prod,desc,tasksDone,ts:Date.now()});
+  if(!date||!hours||!selectedProds.size){alert('Preencha data, horas e selecione ao menos um produto.');return;}
+  // registra uma sessão por produto
+  [...selectedProds].forEach(prod=>{
+    const tasksDone=TASKS.filter(t=>isOk(prod,t));
+    sessions.push({date,person,hours:hours/selectedProds.size,prod,desc,tasksDone,ts:Date.now()});
+  });
   sessions.sort((a,b)=>a.date.localeCompare(b.date));
   saveAll();renderMetrics();
   document.getElementById('s-hours').value='';
   document.getElementById('s-desc').value='';
-  document.getElementById('s-prod').value='';
-  document.getElementById('task-checks').innerHTML='<div style="font-size:13px;color:var(--text3);font-family:Arial,sans-serif">Sessão registrada! Selecione outro produto para continuar.</div>';
-  alert('Sessão registrada!');
+  selectedProds.clear();
+  renderProdList();renderChips();
+  document.getElementById('task-checks').innerHTML='<div style="font-size:13px;color:var(--text3);font-family:Arial,sans-serif">Sessão registrada com sucesso!</div>';
+  alert(`Sessão registrada para ${selectedProds.size||'os'} produto(s)!`);
 }
 
 // ─── HISTÓRICO ────────────────────────────────────────
@@ -801,7 +872,7 @@ function renderChart(){
   const canvas=document.getElementById('hchart');
   if(!sessions.length){canvas.style.display='none';return;}
   canvas.style.display='block';
-  const colors={Coordenador:'#7c5cbf',Pablo:'#2980b9',Lucas:'#27ae60',Erika:'#e67e22'};
+  const colors={Junior:'#7c5cbf',Pablo:'#2980b9',Lucas:'#27ae60',Erika:'#e67e22'};
   const dates=[...new Set(sessions.map(s=>s.date))].sort();
   const datasets=PEOPLE.map(p=>({
     label:p.name,
@@ -851,7 +922,7 @@ function copyRpt(){
 }
 
 // ─── RELATÓRIO POR COLABORADOR ────────────────────────
-let activeCollab='Coordenador';
+let activeCollab='Junior';
 
 function renderCollabTabs(){
   document.getElementById('collab-tabs').innerHTML=PEOPLE.map(p=>
