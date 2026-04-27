@@ -142,6 +142,17 @@ tr:hover td{background:var(--surface2)}
   </div>
 </div>
 
+<!-- MODAL DETALHES DA SESSÃO -->
+<div id="detail-overlay" onclick="closeDetailModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:600;align-items:flex-start;justify-content:center;padding-top:80px">
+  <div onclick="event.stopPropagation()" style="background:var(--surface);border-radius:var(--radius);padding:1.5rem;width:520px;max-width:95vw;border:1px solid var(--border2);max-height:80vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <div id="detail-title" style="font-size:15px;font-weight:700;color:var(--text)"></div>
+      <button onclick="closeDetailModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text3)">×</button>
+    </div>
+    <div id="detail-body"></div>
+  </div>
+</div>
+
 <!-- MODAL EDITAR SESSÃO -->
 <div id="edit-overlay" onclick="closeEditModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:600;align-items:center;justify-content:center">
   <div onclick="event.stopPropagation()" style="background:var(--surface);border-radius:var(--radius);padding:1.5rem;width:480px;max-width:95vw;border:1px solid var(--border2)">
@@ -159,7 +170,7 @@ tr:hover td{background:var(--surface2)}
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
       <div class="fg"><label>Horas</label><input type="number" id="edit-hours" min="0.5" max="12" step="0.5"></div>
-      <div class="fg"><label>Produto</label><input type="text" id="edit-prod" style="background:var(--surface2);color:var(--text2)" readonly></div>
+      <div class="fg"><label>Produtos</label><input type="text" id="edit-prods-display" style="background:var(--surface2);color:var(--text2);font-size:11px" readonly></div>
     </div>
     <div class="fg" style="margin-bottom:1.25rem"><label>Observação</label><input type="text" id="edit-desc" placeholder="Observação..."></div>
     <div style="display:flex;justify-content:flex-end;gap:8px">
@@ -853,19 +864,21 @@ function addSession(){
   const hours=parseFloat(document.getElementById('s-hours').value);
   const desc=document.getElementById('s-desc').value.trim();
   if(!date||!hours||!selectedProds.size){alert('Preencha data, horas e selecione ao menos um produto.');return;}
-  // registra uma sessão por produto
-  [...selectedProds].forEach(prod=>{
-    const tasksDone=TASKS.filter(t=>isOk(prod,t));
-    sessions.push({date,person,hours:hours/selectedProds.size,prod,desc,tasksDone,ts:Date.now()});
-  });
+  // um único registro com array de produtos
+  const prods=[...selectedProds];
+  const prodsSummary=prods.map(prod=>({
+    name:prod,
+    tasksDone:TASKS.filter(t=>isOk(prod,t))
+  }));
+  sessions.push({date,person,hours,desc,prods,prodsSummary,ts:Date.now()});
   sessions.sort((a,b)=>a.date.localeCompare(b.date));
   saveAll();renderMetrics();
+  const n=prods.length;
   document.getElementById('s-hours').value='';
   document.getElementById('s-desc').value='';
   selectedProds.clear();
   renderProdList();renderChips();
-  document.getElementById('task-checks').innerHTML='<div style="font-size:13px;color:var(--text3);font-family:Arial,sans-serif">Sessão registrada com sucesso!</div>';
-  alert(`Sessão registrada para ${selectedProds.size||'os'} produto(s)!`);
+  document.getElementById('task-checks').innerHTML=`<div style="font-size:13px;color:var(--text3);font-family:Arial,sans-serif">✓ Sessão registrada — ${n} produto(s) em ${hours}h!</div>`;
 }
 
 // ─── HISTÓRICO ────────────────────────────────────────
@@ -878,19 +891,62 @@ function renderHistory(){
     const ri=sessions.indexOf(s);
     const d=new Date(s.date+'T12:00:00').toLocaleDateString('pt-BR');
     const p=PEOPLE.find(x=>x.name===s.person)||{bg:'#eee',tc:'#444'};
-    return`<tr>
+    // suporte a sessões antigas (prod único) e novas (prods array)
+    const prodsArr=s.prods||(s.prod?[s.prod]:[]);
+    const prodsLabel=prodsArr.length===1?prodsArr[0]:`${prodsArr.length} produtos`;
+    return`<tr style="cursor:pointer" onclick="openDetailModal(${ri})">
       <td style="width:85px;white-space:nowrap">${d}</td>
       <td style="width:120px"><span class="pill" style="background:${p.bg};color:${p.tc}">${s.person}</span></td>
       <td style="width:50px">${s.hours}h</td>
-      <td style="width:150px;font-weight:600;font-size:12px"><span class="prod-link" onclick="openDrawer('${s.prod.replace(/'/g,"\\'")}');sw('tabela')">${s.prod}</span></td>
+      <td style="font-weight:600;font-size:12px;color:var(--blue)">${prodsLabel}</td>
       <td style="font-size:11px;color:var(--text2)">${s.desc||'—'}</td>
-      <td style="width:56px;white-space:nowrap">
+      <td style="width:56px;white-space:nowrap" onclick="event.stopPropagation()">
         <button class="del-btn" title="Editar" onclick="openEditModal(${ri})" style="font-size:13px">✏️</button>
         <button class="del-btn" title="Apagar" onclick="delSession(${ri})">×</button>
       </td>
     </tr>`;
   }).join('');
-  el.innerHTML=`<table><thead><tr><th>Data</th><th>Pessoa</th><th>Horas</th><th>Produto</th><th>Obs</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+  el.innerHTML=`<div style="font-size:12px;color:var(--text3);font-family:Arial,sans-serif;margin-bottom:8px">Clique em qualquer linha para ver os detalhes.</div><table><thead><tr><th>Data</th><th>Pessoa</th><th>Horas</th><th>Produtos</th><th>Obs</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+// modal detalhes
+function openDetailModal(i){
+  const s=sessions[i];
+  const d=new Date(s.date+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+  const p=PEOPLE.find(x=>x.name===s.person)||{bg:'#eee',tc:'#444'};
+  document.getElementById('detail-title').innerHTML=
+    `<span class="pill" style="background:${p.bg};color:${p.tc};margin-right:8px">${s.person}</span>${d} · ${s.hours}h`;
+
+  const prodsArr=s.prods||(s.prod?[s.prod]:[]);
+  const prodsSummary=s.prodsSummary||(s.prod?[{name:s.prod,tasksDone:s.tasksDone||[]}]:[]);
+
+  let html='';
+  if(s.desc){
+    html+=`<div style="background:var(--amber-bg);border-radius:var(--radius-sm);padding:8px 12px;font-size:13px;color:var(--amber);font-family:Arial,sans-serif;margin-bottom:12px">
+      📝 ${s.desc}
+    </div>`;
+  }
+  prodsSummary.forEach(ps=>{
+    const pct=prodPct(ps.name);const bc=barColor(pct);
+    const tasks=ps.tasksDone&&ps.tasksDone.length?ps.tasksDone:[];
+    html+=`<div style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;background:var(--bg)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-weight:600;font-size:13px;font-family:Arial,sans-serif">${ps.name}</span>
+        <span style="font-size:12px;font-weight:600;color:${bc}">${pct}%</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">
+        ${tasks.length?tasks.map(t=>`<span style="background:#d8f3dc;color:#1b4332;font-size:11px;padding:2px 8px;border-radius:99px;font-family:Arial,sans-serif">✓ ${t}</span>`).join('')
+        :'<span style="font-size:11px;color:var(--text3);font-family:Arial,sans-serif">Nenhuma tarefa marcada nesta sessão</span>'}
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('detail-body').innerHTML=html;
+  document.getElementById('detail-overlay').style.display='flex';
+}
+
+function closeDetailModal(){
+  document.getElementById('detail-overlay').style.display='none';
 }
 
 let editIndex=null;
@@ -898,13 +954,13 @@ let editIndex=null;
 function openEditModal(i){
   editIndex=i;
   const s=sessions[i];
+  const prodsArr=s.prods||(s.prod?[s.prod]:[]);
   document.getElementById('edit-date').value=s.date;
   document.getElementById('edit-person').value=s.person;
   document.getElementById('edit-hours').value=s.hours;
-  document.getElementById('edit-prod').value=s.prod;
+  document.getElementById('edit-prods-display').value=prodsArr.join(', ');
   document.getElementById('edit-desc').value=s.desc||'';
-  const ov=document.getElementById('edit-overlay');
-  ov.style.display='flex';
+  document.getElementById('edit-overlay').style.display='flex';
 }
 
 function closeEditModal(){
