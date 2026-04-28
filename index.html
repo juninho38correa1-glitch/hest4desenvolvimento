@@ -10,15 +10,15 @@
   --bg:#f7f6f3;--surface:#fff;--surface2:#f0efe9;--border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.15);
   --text:#1a1916;--text2:#6b6860;--text3:#a09e98;--accent:#2c2c2a;
   --green:#2d6a4f;--green-bg:#d8f3dc;--blue:#1a5276;--blue-bg:#d6eaf8;
-  --amber:#7d5a00;--amber-bg:#fef3cd;--purple:#4a2a7a;--purple-bg:#ede7f6;
-  --red:#922b21;--red-bg:#fadbd8;--radius:10px;--radius-sm:6px;
+  --amber:#7d5a00;--amber-bg:#fef3cd;--red:#922b21;--red-bg:#fadbd8;
+  --radius:10px;--radius-sm:6px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Georgia',serif;background:var(--bg);color:var(--text);min-height:100vh}
 .topbar{background:var(--surface);border-bottom:1px solid var(--border2);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:200}
 .logo{font-size:15px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text)}
 .logo span{color:var(--text3);font-weight:400}
-.auth-area{display:flex;align-items:center;gap:10px;font-size:13px}
+.auth-area{display:flex;align-items:center;gap:10px}
 .auth-status{font-family:Arial,sans-serif;font-size:12px;color:var(--text2)}
 .auth-status.ok{color:var(--green)}
 .btn-so{font-size:12px;padding:4px 10px;border:1px solid var(--border2);border-radius:var(--radius-sm);cursor:pointer;background:transparent;color:var(--text2);font-family:Arial,sans-serif}
@@ -28,7 +28,7 @@ body{font-family:'Georgia',serif;background:var(--bg);color:var(--text);min-heig
 .mc-lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;font-family:Arial,sans-serif}
 .mc-val{font-size:26px;color:var(--text);line-height:1;margin-bottom:3px}
 .mc-sub{font-size:11px;color:var(--text3);font-family:Arial,sans-serif}
-.tabs{display:flex;gap:4px;margin-bottom:1.25rem;border-bottom:1px solid var(--border);padding-bottom:0}
+.tabs{display:flex;gap:4px;margin-bottom:1.25rem;border-bottom:1px solid var(--border)}
 .tab{padding:8px 16px;font-size:13px;cursor:pointer;background:transparent;border:none;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-1px;font-family:Arial,sans-serif;transition:all .15s}
 .tab:hover{color:var(--text)}
 .tab.on{color:var(--text);border-bottom-color:var(--text);font-weight:600}
@@ -46,17 +46,16 @@ body{font-family:'Georgia',serif;background:var(--bg);color:var(--text);min-heig
 .pbar-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-bottom:4px;font-family:Arial,sans-serif}
 .fg{display:flex;flex-direction:column;gap:4px}
 .fg label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-family:Arial,sans-serif}
-.fg input,.fg select,.fg textarea{height:36px;padding:0 10px;border:1px solid var(--border2);border-radius:var(--radius-sm);font-size:13px;background:var(--surface);color:var(--text);font-family:Arial,sans-serif;outline:none}
+.fg input,.fg select{height:36px;padding:0 10px;border:1px solid var(--border2);border-radius:var(--radius-sm);font-size:13px;background:var(--surface);color:var(--text);font-family:Arial,sans-serif;outline:none}
 .fg input:focus,.fg select:focus{border-color:var(--accent)}
-.fg textarea{height:80px;padding:8px 10px;resize:vertical}
 .form-row{display:grid;gap:10px;margin-bottom:10px}
 .btn{height:36px;padding:0 16px;border:1px solid var(--border2);border-radius:var(--radius-sm);font-size:13px;cursor:pointer;background:transparent;color:var(--text);font-family:Arial,sans-serif;transition:all .15s}
 .btn:hover{background:var(--surface2)}
 .btn-p{background:var(--text);color:#fff;border-color:var(--text)}
 .btn-p:hover{opacity:.85;background:var(--text)}
 .btn-sm{height:28px;padding:0 10px;font-size:12px}
-.ck-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;margin-top:10px}
-.ck-label{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text2);padding:7px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg);font-family:Arial,sans-serif;transition:all .12s;position:relative}
+.ck-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;margin-top:8px}
+.ck-label{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text2);padding:7px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg);font-family:Arial,sans-serif;transition:all .12s}
 .ck-label:hover{border-color:var(--border2);background:var(--surface2)}
 .ck-label.done{border-color:#2d6a4f;background:#d8f3dc;color:#1b4332}
 .ck{width:15px;height:15px;cursor:pointer;accent-color:#2d6a4f;flex-shrink:0}
@@ -68,7 +67,7 @@ td{padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text);vert
 tr:last-child td{border-bottom:none}
 tr:hover td{background:var(--surface2)}
 .tc{text-align:center;width:60px}
-.ok-b{display:inline-flex;align-items:center;justify-content:center;width:32px;height:20px;border-radius:4px;font-size:10px;font-weight:700;background:#d8f3dc;color:#1b4332;font-family:Arial,sans-serif;cursor:pointer}
+.ok-b{display:inline-flex;align-items:center;justify-content:center;width:32px;height:20px;border-radius:4px;font-size:10px;font-weight:700;background:#d8f3dc;color:#1b4332;font-family:Arial,sans-serif}
 .no-b{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;font-size:11px;color:var(--text3)}
 .nv-b{display:inline-flex;align-items:center;justify-content:center;width:32px;height:20px;border-radius:4px;font-size:9px;font-weight:600;background:#fef3cd;color:#7d5a00;font-family:Arial,sans-serif}
 .pill{font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;display:inline-block;font-family:Arial,sans-serif}
@@ -88,47 +87,48 @@ tr:hover td{background:var(--surface2)}
 .sync-ok{background:var(--green-bg);color:var(--green)}
 .sync-no{background:var(--surface2);color:var(--text3)}
 .sync-ing{background:var(--amber-bg);color:var(--amber)}
-
+.sync-err{background:var(--red-bg);color:var(--red)}
 /* TOOLTIP */
-.tooltip-wrap{position:relative;display:inline-block}
-.tooltip-wrap .tt{visibility:hidden;opacity:0;background:#1a1916;color:#fff;font-size:11px;font-family:Arial,sans-serif;padding:5px 9px;border-radius:5px;white-space:nowrap;position:absolute;bottom:130%;left:50%;transform:translateX(-50%);transition:opacity .15s;z-index:300;pointer-events:none}
-.tooltip-wrap .tt::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:4px solid transparent;border-top-color:#1a1916}
-.tooltip-wrap:hover .tt{visibility:visible;opacity:1}
-
-/* DRAWER (painel lateral do produto) */
+.tt-wrap{position:relative;display:inline-block}
+.tt-wrap .tt{visibility:hidden;opacity:0;background:#1a1916;color:#fff;font-size:11px;font-family:Arial,sans-serif;padding:5px 9px;border-radius:5px;white-space:nowrap;position:absolute;bottom:130%;left:50%;transform:translateX(-50%);transition:opacity .15s;z-index:300;pointer-events:none}
+.tt-wrap .tt::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:4px solid transparent;border-top-color:#1a1916}
+.tt-wrap:hover .tt{visibility:visible;opacity:1}
+/* DRAWER */
 .drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:400}
 .drawer-overlay.open{display:block}
 .drawer{position:fixed;top:0;right:-440px;width:420px;height:100vh;background:var(--surface);border-left:1px solid var(--border2);z-index:500;transition:right .25s ease;overflow-y:auto;padding:1.5rem}
 .drawer.open{right:0}
 .drawer-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.25rem}
-.drawer-title{font-size:16px;font-weight:700;color:var(--text);line-height:1.3}
-.drawer-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--text3);line-height:1;padding:0 4px}
-.drawer-close:hover{color:var(--text)}
+.drawer-title{font-size:16px;font-weight:700;color:var(--text)}
+.drawer-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--text3)}
 .drawer-section{margin-bottom:1.25rem}
 .drawer-section-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);font-family:Arial,sans-serif;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)}
-.drawer-tasks{display:flex;flex-direction:column;gap:5px}
-.drawer-task-row{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg);font-size:13px;font-family:Arial,sans-serif}
+.drawer-task-row{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg);font-size:13px;font-family:Arial,sans-serif;margin-bottom:5px}
 .drawer-task-row.done{border-color:#2d6a4f;background:#d8f3dc;color:#1b4332}
 .drawer-task-row.nv{opacity:.5;border-style:dashed}
 .drawer-task-date{font-size:11px;color:var(--text3)}
 .drawer-task-row.done .drawer-task-date{color:#2d6a4f}
 .obs-area{width:100%;min-height:100px;padding:10px;border:1px solid var(--border2);border-radius:var(--radius-sm);font-size:13px;font-family:Arial,sans-serif;background:var(--surface);color:var(--text);resize:vertical;outline:none}
-.obs-area:focus{border-color:var(--accent)}
 .obs-saved{font-size:11px;color:var(--green);font-family:Arial,sans-serif;margin-top:4px;display:none}
-
-/* RELATÓRIO POR COLABORADOR */
+/* COLABORADOR */
 .collab-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem}
 .collab-tab{padding:5px 14px;border:1px solid var(--border2);border-radius:99px;font-size:12px;cursor:pointer;background:transparent;color:var(--text2);font-family:Arial,sans-serif}
 .collab-tab.on{background:var(--text);color:#fff;border-color:var(--text)}
 .collab-day{margin-bottom:1rem}
 .collab-day-title{font-size:13px;font-weight:600;color:var(--text);font-family:Arial,sans-serif;margin-bottom:6px;display:flex;align-items:center;gap:8px}
 .collab-day-title span{font-size:11px;font-weight:400;color:var(--text3);background:var(--surface2);padding:2px 8px;border-radius:99px}
-.collab-entry{padding:8px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);font-family:Arial,sans-serif;font-size:12px;margin-bottom:5px}
-.collab-entry-prod{font-weight:600;color:var(--text);margin-bottom:3px}
-.collab-entry-tasks{color:var(--green);font-size:11px}
-.collab-entry-obs{color:var(--text2);font-size:11px;margin-top:2px;font-style:italic}
+.collab-entry{padding:10px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);font-family:Arial,sans-serif;font-size:12px;margin-bottom:6px}
+.collab-entry-prod{font-weight:600;color:var(--text);margin-bottom:4px}
+.collab-entry-tasks{color:var(--green);font-size:11px;margin-bottom:2px}
+.collab-entry-obs{color:var(--text2);font-size:11px;font-style:italic}
 .prod-link{cursor:pointer;color:var(--blue);text-decoration:underline;font-family:Arial,sans-serif}
-.prod-link:hover{color:var(--purple)}
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:600;align-items:flex-start;justify-content:center;padding-top:60px}
+.modal-overlay.open{display:flex}
+.modal-box{background:var(--surface);border-radius:var(--radius);padding:1.5rem;width:520px;max-width:95vw;border:1px solid var(--border2);max-height:82vh;overflow-y:auto}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+.modal-title{font-size:15px;font-weight:700;color:var(--text)}
+.modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--text3)}
 </style>
 </head>
 <body>
@@ -142,25 +142,25 @@ tr:hover td{background:var(--surface2)}
   </div>
 </div>
 
-<!-- MODAL DETALHES DA SESSÃO -->
-<div id="detail-overlay" onclick="closeDetailModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:600;align-items:flex-start;justify-content:center;padding-top:80px">
-  <div onclick="event.stopPropagation()" style="background:var(--surface);border-radius:var(--radius);padding:1.5rem;width:520px;max-width:95vw;border:1px solid var(--border2);max-height:80vh;overflow-y:auto">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
-      <div id="detail-title" style="font-size:15px;font-weight:700;color:var(--text)"></div>
-      <button onclick="closeDetailModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text3)">×</button>
+<!-- MODAL DETALHES -->
+<div class="modal-overlay" id="detail-overlay" onclick="closeModal('detail-overlay')">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title" id="detail-title"></div>
+      <button class="modal-close" onclick="closeModal('detail-overlay')">×</button>
     </div>
     <div id="detail-body"></div>
   </div>
 </div>
 
-<!-- MODAL EDITAR SESSÃO -->
-<div id="edit-overlay" onclick="closeEditModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:600;align-items:center;justify-content:center">
-  <div onclick="event.stopPropagation()" style="background:var(--surface);border-radius:var(--radius);padding:1.5rem;width:480px;max-width:95vw;border:1px solid var(--border2)">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">
-      <div style="font-size:15px;font-weight:700;color:var(--text)">Editar sessão</div>
-      <button onclick="closeEditModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text3)">×</button>
+<!-- MODAL EDITAR -->
+<div class="modal-overlay" id="edit-overlay" onclick="closeModal('edit-overlay')">
+  <div class="modal-box" onclick="event.stopPropagation()" style="max-width:460px">
+    <div class="modal-header">
+      <div class="modal-title">Editar sessão</div>
+      <button class="modal-close" onclick="closeModal('edit-overlay')">×</button>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+    <div class="form-row" style="grid-template-columns:1fr 1fr">
       <div class="fg"><label>Data</label><input type="date" id="edit-date"></div>
       <div class="fg"><label>Pessoa</label>
         <select id="edit-person">
@@ -168,14 +168,14 @@ tr:hover td{background:var(--surface2)}
         </select>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+    <div class="form-row" style="grid-template-columns:1fr 1fr">
       <div class="fg"><label>Horas</label><input type="number" id="edit-hours" min="0.5" max="12" step="0.5"></div>
       <div class="fg"><label>Produtos</label><input type="text" id="edit-prods-display" style="background:var(--surface2);color:var(--text2);font-size:11px" readonly></div>
     </div>
     <div class="fg" style="margin-bottom:1.25rem"><label>Observação</label><input type="text" id="edit-desc" placeholder="Observação..."></div>
     <div style="display:flex;justify-content:flex-end;gap:8px">
-      <button class="btn" onclick="closeEditModal()">Cancelar</button>
-      <button class="btn btn-p" onclick="saveEditSession()">Salvar alterações</button>
+      <button class="btn" onclick="closeModal('edit-overlay')">Cancelar</button>
+      <button class="btn btn-p" onclick="saveEditSession()">Salvar</button>
     </div>
   </div>
 </div>
@@ -184,17 +184,18 @@ tr:hover td{background:var(--surface2)}
 <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
 <div class="drawer" id="drawer">
   <div class="drawer-header">
-    <div class="drawer-title" id="drawer-title">Produto</div>
+    <div class="drawer-title" id="drawer-title"></div>
     <button class="drawer-close" onclick="closeDrawer()">×</button>
   </div>
+  <div id="drawer-pct-bar" style="margin-bottom:1rem"></div>
   <div class="drawer-section">
     <div class="drawer-section-title">Tarefas</div>
-    <div class="drawer-tasks" id="drawer-tasks"></div>
+    <div id="drawer-tasks"></div>
   </div>
   <div class="drawer-section">
     <div class="drawer-section-title">Observações</div>
-    <textarea class="obs-area" id="drawer-obs" placeholder="Anote aqui qualquer observação sobre este produto..." oninput="saveObs()"></textarea>
-    <div class="obs-saved" id="obs-saved">Salvo</div>
+    <textarea class="obs-area" id="drawer-obs" placeholder="Anote qualquer observação sobre este produto..." oninput="saveObs()"></textarea>
+    <div class="obs-saved" id="obs-saved">✓ Salvo</div>
   </div>
 </div>
 
@@ -215,7 +216,7 @@ tr:hover td{background:var(--surface2)}
     <div class="mc"><div class="mc-lbl">Total de horas</div><div class="mc-val" id="m-h">0h</div><div class="mc-sub">em horas extras</div></div>
     <div class="mc"><div class="mc-lbl">Sessões realizadas</div><div class="mc-val" id="m-s">0</div><div class="mc-sub">dias trabalhados</div></div>
     <div class="mc"><div class="mc-lbl">Progresso geral</div><div class="mc-val" id="m-t">0%</div><div class="mc-sub">de todas as tarefas</div></div>
-    <div class="mc"><div class="mc-lbl">Produtos 100%</div><div class="mc-val" id="m-p">0/81</div><div class="mc-sub">totalmente concluídos</div></div>
+    <div class="mc"><div class="mc-lbl">Produtos 100%</div><div class="mc-val" id="m-p">0/0</div><div class="mc-sub">totalmente concluídos</div></div>
   </div>
 
   <div class="tabs">
@@ -230,7 +231,7 @@ tr:hover td{background:var(--surface2)}
   <div class="sec on" id="sec-visao">
     <div class="person-grid" id="person-cards"></div>
     <div class="card">
-      <div class="card-ttl">Progresso por tarefa — de 81 produtos</div>
+      <div class="card-ttl">Progresso por tarefa</div>
       <div id="task-bars"></div>
     </div>
   </div>
@@ -247,7 +248,7 @@ tr:hover td{background:var(--surface2)}
             <option value="below">Abaixo de 67%</option>
           </select>
         </div>
-        <div style="font-size:12px;color:var(--text3);font-family:Arial,sans-serif;align-self:center">Passe o mouse nas tarefas para ver a data. Clique no produto para detalhes.</div>
+        <div style="font-size:12px;color:var(--text3);font-family:Arial,sans-serif;align-self:center">Passe o mouse nas tarefas para ver a data · Clique no produto para detalhes</div>
       </div>
       <div class="tbl-wrap">
         <table>
@@ -274,27 +275,19 @@ tr:hover td{background:var(--surface2)}
         </div>
         <div class="fg"><label>Horas trabalhadas</label><input type="number" id="s-hours" min="0.5" max="12" step="0.5" placeholder="2.5"></div>
       </div>
-      <div class="form-row" style="grid-template-columns:1fr">
-        <div class="fg"><label>Observação geral da sessão</label><input type="text" id="s-desc" placeholder="Detalhe da atividade realizada nessa sessão..."></div>
-      </div>
-
-      <!-- SELEÇÃO MÚLTIPLA DE PRODUTOS -->
+      <div class="fg" style="margin-bottom:10px"><label>Observação da sessão</label><input type="text" id="s-desc" placeholder="Descreva o que foi feito nessa sessão..."></div>
       <div style="margin-bottom:10px">
         <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-family:Arial,sans-serif;margin-bottom:6px">Produtos trabalhados</div>
         <div style="display:flex;gap:8px;margin-bottom:8px">
           <input type="text" id="prod-search" placeholder="Buscar produto..." oninput="filterProdList()"
             style="flex:1;height:34px;padding:0 10px;border:1px solid var(--border2);border-radius:var(--radius-sm);font-size:13px;background:var(--surface);color:var(--text);font-family:Arial,sans-serif;outline:none">
-          <button class="btn btn-sm" onclick="selectAllVisible()" style="white-space:nowrap">+ Todos visíveis</button>
+          <button class="btn btn-sm" onclick="selectAllVisible()">+ Todos visíveis</button>
           <button class="btn btn-sm" onclick="clearProds()">Limpar</button>
         </div>
-        <!-- chips dos selecionados -->
-        <div id="selected-chips" style="display:flex;flex-wrap:wrap;gap:6px;min-height:28px;margin-bottom:8px"></div>
-        <!-- lista de produtos -->
-        <div id="prod-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:5px;max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px;background:var(--bg)"></div>
+        <div id="selected-chips" style="display:flex;flex-wrap:wrap;gap:6px;min-height:24px;margin-bottom:8px"></div>
+        <div id="prod-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:5px;max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px;background:var(--bg)"></div>
       </div>
-
-      <!-- TAREFAS DOS PRODUTOS SELECIONADOS -->
-      <div id="task-checks" style="margin-top:4px">
+      <div id="task-checks">
         <div style="font-size:13px;color:var(--text3);font-family:Arial,sans-serif">Selecione os produtos acima para ver as tarefas.</div>
       </div>
       <button class="btn btn-p" style="margin-top:14px" onclick="addSession()">+ Registrar sessão</button>
@@ -339,18 +332,20 @@ tr:hover td{background:var(--surface2)}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
-// ─── CONSTANTES ───────────────────────────────────────
+// ─── CONFIG ───────────────────────────────────────────
 const CLIENT_ID='42291935967-3tktkmoagpgkjqrjo7l9anl6iihj2anm.apps.googleusercontent.com';
 const DRIVE_FILE='studyo4_dados.json';
 const DRIVE_FOLDER='Studyo4';
+
 const TASKS=['ENGENHARIA','CUSTOS','PLANOS AUXILIARES','FICHA TÉCNICA','CATÁLOGO','FOTO','MEDIÇÕES','BLOCO 3D','RENDER'];
 const TASK_SHORT=['ENG','CUST','PLANOS','FICHA','CAT','FOTO','MED','3D','RENDER'];
 const PEOPLE=[
-  {name:'Junior',color:'#4a2a7a',bg:'#ede7f6',tc:'#4a2a7a'},
-  {name:'Pablo',color:'#1a5276',bg:'#d6eaf8',tc:'#1a5276'},
-  {name:'Lucas',color:'#2d6a4f',bg:'#d8f3dc',tc:'#2d6a4f'},
-  {name:'Erika',color:'#7d5a00',bg:'#fef3cd',tc:'#7d5a00'},
+  {name:'Junior', color:'#4a2a7a',bg:'#ede7f6',tc:'#4a2a7a'},
+  {name:'Pablo',  color:'#1a5276',bg:'#d6eaf8',tc:'#1a5276'},
+  {name:'Lucas',  color:'#2d6a4f',bg:'#d8f3dc',tc:'#2d6a4f'},
+  {name:'Erika',  color:'#7d5a00',bg:'#fef3cd',tc:'#7d5a00'},
 ];
+
 const O='ok',N='',X='nv';
 const RAW=[
 ['NEW SPACE','SIM','SIM',O,O,O,O,O,O,O,O,O],
@@ -436,10 +431,12 @@ const RAW=[
 ['PUGLIA ST26-47','SIM','',O,O,N,N,O,N,N,N,N],
 ];
 const PRODUCTS=RAW.map(r=>r[0]);
+const TOTAL_PRODS=PRODUCTS.length; // dinâmico, não hardcoded
 
 // ─── ESTADO ───────────────────────────────────────────
 function buildDefaults(){
   const c={};
+  const today=new Date().toISOString().slice(0,10);
   RAW.forEach(r=>{
     c[r[0]]={};
     TASKS.forEach((t,i)=>{
@@ -450,40 +447,60 @@ function buildDefaults(){
   return c;
 }
 
-let checks=JSON.parse(localStorage.getItem('s04v5_checks')||'null')||buildDefaults();
-let sessions=JSON.parse(localStorage.getItem('s04v5_sessions')||'[]');
-// taskDates: {prod: {task: 'YYYY-MM-DD'}}
-let taskDates=JSON.parse(localStorage.getItem('s04v5_dates')||'{}');
-// obs: {prod: 'texto'}
-let obs=JSON.parse(localStorage.getItem('s04v5_obs')||'{}');
+// FIX #4: gera datas para tarefas já marcadas na importação
+function buildDefaultDates(){
+  const d={};
+  const importDate='2025-01-01'; // data simbólica para itens já existentes
+  RAW.forEach(r=>{
+    d[r[0]]={};
+    TASKS.forEach((t,i)=>{
+      if(r[i+3]===O) d[r[0]][t]=importDate;
+    });
+  });
+  return d;
+}
 
-let accessToken=localStorage.getItem('s04_token')||null;
-let tokenExpiry=parseInt(localStorage.getItem('s04_token_expiry')||'0');
+let checks   = JSON.parse(localStorage.getItem('s04v6_checks')  ||'null') || buildDefaults();
+let sessions = JSON.parse(localStorage.getItem('s04v6_sessions')||'[]');
+let taskDates= JSON.parse(localStorage.getItem('s04v6_dates')   ||'null') || buildDefaultDates();
+let obs      = JSON.parse(localStorage.getItem('s04v6_obs')     ||'{}');
+
+// FIX #4: token nunca fica em localStorage — apenas em memória
+let accessToken=null;
+let tokenExpiry=0;
 let driveFileId=null;
 let chartInst=null;
 let currentDrawerProd=null;
 let obsTimer=null;
+let saveTimer=null; // FIX #3: debounce no Drive
 
-function isTokenValid(){return accessToken&&Date.now()<tokenExpiry-60000;}
+function isTokenValid(){return !!accessToken&&Date.now()<tokenExpiry-60000;}
 
 function saveLocal(){
-  localStorage.setItem('s04v5_checks',JSON.stringify(checks));
-  localStorage.setItem('s04v5_sessions',JSON.stringify(sessions));
-  localStorage.setItem('s04v5_dates',JSON.stringify(taskDates));
-  localStorage.setItem('s04v5_obs',JSON.stringify(obs));
+  localStorage.setItem('s04v6_checks',  JSON.stringify(checks));
+  localStorage.setItem('s04v6_sessions',JSON.stringify(sessions));
+  localStorage.setItem('s04v6_dates',   JSON.stringify(taskDates));
+  localStorage.setItem('s04v6_obs',     JSON.stringify(obs));
 }
 
-// ─── GOOGLE AUTH ──────────────────────────────────────
+// FIX #3: debounce — agrupa múltiplos saves em 1 chamada ao Drive (1.5s)
+function saveAll(){
+  saveLocal();
+  clearTimeout(saveTimer);
+  if(isTokenValid()){
+    saveTimer=setTimeout(()=>saveToGDrive(),1500);
+  }
+}
+
+// ─── GOOGLE AUTH (token apenas em memória) ────────────
 function initGoogleAuth(){
   window.tokenClient=google.accounts.oauth2.initTokenClient({
     client_id:CLIENT_ID,
     scope:'https://www.googleapis.com/auth/drive.file',
     callback:async(resp)=>{
-      if(resp.error)return;
+      if(resp.error){showSyncErr('Erro de autenticação');return;}
       accessToken=resp.access_token;
       tokenExpiry=Date.now()+(resp.expires_in*1000);
-      localStorage.setItem('s04_token',accessToken);
-      localStorage.setItem('s04_token_expiry',tokenExpiry.toString());
       setConnected(true);
       await loadFromGDrive();
     }
@@ -494,20 +511,11 @@ function initGoogleAuth(){
     auto_select:true,
   });
   google.accounts.id.renderButton(document.getElementById('google-btn'),{theme:'outline',size:'small',text:'signin_with'});
-
-  // auto-login se token ainda válido
-  if(isTokenValid()){
-    setConnected(true);
-    loadFromGDrive();
-  } else {
-    // tenta silent
-    google.accounts.id.prompt();
-  }
+  google.accounts.id.prompt(); // tenta silent login
 }
 
 function signOut(){
   accessToken=null;tokenExpiry=0;driveFileId=null;
-  localStorage.removeItem('s04_token');localStorage.removeItem('s04_token_expiry');
   google.accounts.id.disableAutoSelect();
   setConnected(false);
 }
@@ -527,16 +535,19 @@ function setSyncing(on){
   document.getElementById('sync-badge').className='sync-status '+(on?'sync-ing':'sync-ok');
 }
 
+function showSyncErr(msg){
+  document.getElementById('sync-badge').textContent='Erro: '+msg;
+  document.getElementById('sync-badge').className='sync-status sync-err';
+}
+
 // ─── GOOGLE DRIVE ─────────────────────────────────────
 async function ensureToken(){
   if(isTokenValid())return true;
   return new Promise(res=>{
-    window.tokenClient.requestAccessToken({prompt:'',callback:async(r)=>{
+    window.tokenClient.requestAccessToken({prompt:'',callback:(r)=>{
       if(r.error){res(false);return;}
       accessToken=r.access_token;
       tokenExpiry=Date.now()+(r.expires_in*1000);
-      localStorage.setItem('s04_token',accessToken);
-      localStorage.setItem('s04_token_expiry',tokenExpiry.toString());
       res(true);
     }});
   });
@@ -562,16 +573,17 @@ async function findDataFile(folderId){
 }
 
 async function saveToGDrive(){
-  if(!await ensureToken()){alert('Faça login primeiro.');return;}
+  if(!await ensureToken()){showSyncErr('sem autenticação');return;}
   setSyncing(true);
   try{
     const payload=JSON.stringify({checks,sessions,taskDates,obs,saved:new Date().toISOString()});
     const folderId=await findOrCreateFolder();
     if(!driveFileId)driveFileId=await findDataFile(folderId);
     if(driveFileId){
-      await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`,{
+      const r=await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`,{
         method:'PATCH',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:payload
       });
+      if(!r.ok)throw new Error('HTTP '+r.status);
     }else{
       const meta={name:DRIVE_FILE,parents:[folderId]};
       const form=new FormData();
@@ -580,11 +592,15 @@ async function saveToGDrive(){
       const res=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{
         method:'POST',headers:{Authorization:'Bearer '+accessToken},body:form
       });
+      if(!res.ok)throw new Error('HTTP '+res.status);
       driveFileId=(await res.json()).id;
     }
     setSyncing(false);
     document.getElementById('drive-detail').textContent='Salvo em: '+new Date().toLocaleString('pt-BR');
-  }catch(e){setSyncing(false);console.error(e);}
+  }catch(e){
+    showSyncErr('falha ao salvar'); // FIX #8: feedback visual de erro
+    console.error('Drive save error:',e);
+  }
 }
 
 async function loadFromGDrive(){
@@ -594,38 +610,61 @@ async function loadFromGDrive(){
     driveFileId=await findDataFile(folderId);
     if(!driveFileId){saveToGDrive();return;}
     const res=await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`,{headers:{Authorization:'Bearer '+accessToken}});
+    if(!res.ok)throw new Error('HTTP '+res.status);
     const data=await res.json();
-    if(data.checks)checks=data.checks;
-    if(data.sessions)sessions=data.sessions;
+    if(data.checks)   checks=data.checks;
+    if(data.sessions) sessions=data.sessions;
     if(data.taskDates)taskDates=data.taskDates;
-    if(data.obs)obs=data.obs;
+    if(data.obs)      obs=data.obs;
     saveLocal();renderAll();
     document.getElementById('drive-detail').textContent='Carregado: '+new Date(data.saved).toLocaleString('pt-BR');
-  }catch(e){console.error(e);}
-}
-
-function saveAll(){
-  saveLocal();
-  if(isTokenValid())saveToGDrive();
+  }catch(e){
+    showSyncErr('falha ao carregar');
+    console.error('Drive load error:',e);
+  }
 }
 
 // ─── HELPERS ──────────────────────────────────────────
-const isOk=(p,t)=>checks[p]&&checks[p][t]===true;
-const isNv=(p,t)=>checks[p]&&checks[p][t]==='nv';
+const isOk =(p,t)=>checks[p]&&checks[p][t]===true;
+const isNv =(p,t)=>checks[p]&&checks[p][t]==='nv';
 const barColor=pct=>pct===100?'#2d6a4f':pct>=67?'#1a5276':pct>=33?'#c07800':'#922b21';
+const fmtDate=iso=>iso?new Date(iso+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+
 function prodPct(prod){
   let done=0,total=0;
   TASKS.forEach(t=>{if(!isNv(prod,t)){total++;if(isOk(prod,t))done++;}});
   return total?Math.round(done/total*100):0;
 }
 function taskTotal(task){return PRODUCTS.filter(p=>isOk(p,task)).length;}
+
+// FIX #5: usa TOTAL_PRODS dinâmico em vez de /81 hardcoded
 function overallPct(){
   let done=0,total=0;
   PRODUCTS.forEach(prod=>TASKS.forEach(t=>{if(!isNv(prod,t)){total++;if(isOk(prod,t))done++;}}));
   return total?Math.round(done/total*100):0;
 }
 function completedProds(){return PRODUCTS.filter(p=>TASKS.every(t=>isOk(p,t)||isNv(p,t))).length;}
-function fmtDate(iso){return iso?new Date(iso+'T12:00:00').toLocaleDateString('pt-BR'):'—';}
+
+// FIX #1: progresso individual por pessoa = sessões registradas por ela
+function personStats(pname){
+  const mySessions=sessions.filter(s=>s.person===pname);
+  const myHours=mySessions.reduce((a,s)=>a+s.hours,0);
+  // produtos únicos trabalhados
+  const prodsSet=new Set();
+  mySessions.forEach(s=>{
+    const arr=s.prods||(s.prod?[s.prod]:[]);
+    arr.forEach(p=>prodsSet.add(p));
+  });
+  // tarefas OK dentro desses produtos
+  let done=0,total=0;
+  prodsSet.forEach(prod=>{
+    TASKS.forEach(t=>{
+      if(!isNv(prod,t)){total++;if(isOk(prod,t))done++;}
+    });
+  });
+  const pct=total?Math.round(done/total*100):0;
+  return{hours:myHours,sessions:mySessions.length,pct,prodsCount:prodsSet.size,done,total};
+}
 
 // ─── TABS ─────────────────────────────────────────────
 function sw(t){
@@ -637,7 +676,7 @@ function sw(t){
   if(t==='sessao'){renderProdList();renderChips();renderTaskChecks();}
   if(t==='historico'){renderHistory();renderChart();}
   if(t==='relatorio')renderReport();
-  if(t==='colaborador')renderCollabTabs();
+  if(t==='colaborador'){activeCollab=activeCollab||'Junior';renderCollabTabs();}
 }
 
 // ─── MÉTRICAS ─────────────────────────────────────────
@@ -646,36 +685,36 @@ function renderMetrics(){
   document.getElementById('m-h').textContent=h.toFixed(1)+'h';
   document.getElementById('m-s').textContent=sessions.length;
   document.getElementById('m-t').textContent=overallPct()+'%';
-  document.getElementById('m-p').textContent=completedProds()+'/81';
+  document.getElementById('m-p').textContent=completedProds()+'/'+TOTAL_PRODS;
 }
 
-// ─── VISÃO GERAL ──────────────────────────────────────
+// ─── VISÃO GERAL (FIX #1) ─────────────────────────────
 function renderVisao(){
   renderMetrics();
   document.getElementById('person-cards').innerHTML=PEOPLE.map(p=>{
-    let done=0,total=0;
-    PRODUCTS.forEach(prod=>TASKS.forEach(t=>{if(!isNv(prod,t)){total++;if(isOk(prod,t))done++;}}));
-    const pct=total?Math.round(done/total*100):0;
-    const ini=p.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-    const bc=barColor(pct);
-    const mySessions=sessions.filter(s=>s.person===p.name);
-    const myHours=mySessions.reduce((a,s)=>a+s.hours,0);
+    const st=personStats(p.name);
+    const ini=p.name.slice(0,2).toUpperCase();
+    const bc=barColor(st.pct);
     return`<div class="person-card">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
         <div class="avatar" style="background:${p.bg};color:${p.tc}">${ini}</div>
-        <div style="flex:1"><div class="pname">${p.name}</div><div class="prole">${mySessions.length} sessões · ${myHours.toFixed(1)}h extras</div></div>
-        <div style="font-size:22px;color:${bc}">${pct}%</div>
+        <div style="flex:1">
+          <div class="pname">${p.name}</div>
+          <div class="prole">${st.sessions} sessões · ${st.hours.toFixed(1)}h · ${st.prodsCount} produto(s)</div>
+        </div>
+        <div style="font-size:22px;color:${bc}">${st.pct}%</div>
       </div>
-      <div class="pbar"><div class="pfill" style="width:${pct}%;background:${bc}"></div></div>
+      <div class="pbar"><div class="pfill" style="width:${st.pct}%;background:${bc}"></div></div>
+      <div style="font-size:11px;color:var(--text3);font-family:Arial,sans-serif;margin-top:4px">${st.done}/${st.total} tarefas OK nos produtos trabalhados</div>
     </div>`;
   }).join('');
 
   document.getElementById('task-bars').innerHTML=TASKS.map(t=>{
     const done=taskTotal(t);
-    const pct=Math.round(done/81*100);
+    const pct=Math.round(done/TOTAL_PRODS*100);
     const bc=barColor(pct);
     return`<div class="pbar-wrap">
-      <div class="pbar-row"><span>${t}</span><span style="color:${bc}">${done}/81 &nbsp;${pct}%</span></div>
+      <div class="pbar-row"><span>${t}</span><span style="color:${bc}">${done}/${TOTAL_PRODS} &nbsp;${pct}%</span></div>
       <div class="pbar"><div class="pfill" style="width:${pct}%;background:${bc}"></div></div>
     </div>`;
   }).join('');
@@ -683,9 +722,11 @@ function renderVisao(){
 
 // ─── TABELA ───────────────────────────────────────────
 function badgeHtml(prod,task,val){
-  const date=taskDates[prod]&&taskDates[prod][task]?fmtDate(taskDates[prod][task]):'sem data';
-  if(val===true)return`<div class="tooltip-wrap"><span class="ok-b">OK</span><span class="tt">Concluído em ${date}</span></div>`;
-  if(val==='nv')return`<div class="tooltip-wrap"><span class="nv-b">N/A</span><span class="tt">Não se aplica</span></div>`;
+  if(val===true){
+    const date=taskDates[prod]&&taskDates[prod][task]?fmtDate(taskDates[prod][task]):'importado';
+    return`<div class="tt-wrap"><span class="ok-b">OK</span><span class="tt">✓ ${date}</span></div>`;
+  }
+  if(val==='nv') return`<div class="tt-wrap"><span class="nv-b">N/A</span><span class="tt">Não se aplica</span></div>`;
   return`<span class="no-b">—</span>`;
 }
 
@@ -704,8 +745,8 @@ function renderTable(){
     const pct=prodPct(prod);const bc=barColor(pct);
     const hasObs=obs[prod]&&obs[prod].trim();
     return`<tr>
-      <td><span class="prod-link" onclick="openDrawer('${prod.replace(/'/g,"\\'")}')">
-        ${prod}${hasObs?` <span style="font-size:10px;color:var(--amber)">●</span>`:''}
+      <td><span class="prod-link" onclick="openDrawer('${esc(prod)}')">
+        ${prod}${hasObs?` <span style="font-size:10px;color:var(--amber)" title="Tem observação">●</span>`:''}
       </span></td>
       ${TASKS.map(t=>`<td class="tc">${badgeHtml(prod,t,checks[prod]?checks[prod][t]:false)}</td>`).join('')}
       <td style="text-align:right">
@@ -719,27 +760,32 @@ function renderTable(){
 }
 
 // ─── DRAWER ───────────────────────────────────────────
+function esc(s){return s.replace(/'/g,"\\'")} // helper escape
+
 function openDrawer(prod){
   currentDrawerProd=prod;
   document.getElementById('drawer-title').textContent=prod;
   document.getElementById('drawer-obs').value=obs[prod]||'';
   document.getElementById('obs-saved').style.display='none';
-
   const pct=prodPct(prod);const bc=barColor(pct);
+  document.getElementById('drawer-pct-bar').innerHTML=
+    `<div style="display:flex;justify-content:space-between;font-size:12px;font-family:Arial,sans-serif;margin-bottom:4px">
+      <span style="color:var(--text3)">Progresso</span><span style="font-weight:600;color:${bc}">${pct}%</span>
+    </div>
+    <div class="pbar"><div class="pfill" style="width:${pct}%;background:${bc}"></div></div>`;
   document.getElementById('drawer-tasks').innerHTML=TASKS.map(t=>{
     const val=checks[prod]?checks[prod][t]:false;
-    const date=taskDates[prod]&&taskDates[prod][t]?fmtDate(taskDates[prod][t]):'—';
+    const date=taskDates[prod]&&taskDates[prod][t]?fmtDate(taskDates[prod][t]):'importado';
     if(val==='nv')return`<div class="drawer-task-row nv"><span>${t}</span><span class="drawer-task-date">N/A</span></div>`;
     const isDone=val===true;
     return`<div class="drawer-task-row ${isDone?'done':''}">
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1">
-        <input type="checkbox" ${isDone?'checked':''} onchange="toggleFromDrawer('${prod.replace(/'/g,"\\'")}','${t}',this.checked)" style="accent-color:#2d6a4f">
+        <input type="checkbox" ${isDone?'checked':''} onchange="toggleFromDrawer('${esc(prod)}','${t}',this.checked)" style="accent-color:#2d6a4f">
         ${t}
       </label>
       <span class="drawer-task-date">${isDone?date:'pendente'}</span>
     </div>`;
   }).join('');
-
   document.getElementById('drawer').classList.add('open');
   document.getElementById('drawer-overlay').classList.add('open');
 }
@@ -753,15 +799,9 @@ function closeDrawer(){
 function toggleFromDrawer(prod,task,val){
   if(!checks[prod])checks[prod]={};
   checks[prod][task]=val;
-  if(val){
-    if(!taskDates[prod])taskDates[prod]={};
-    taskDates[prod][task]=new Date().toISOString().slice(0,10);
-  }else{
-    if(taskDates[prod])delete taskDates[prod][task];
-  }
-  saveAll();renderMetrics();
-  openDrawer(prod);
-  renderTable();
+  if(val){if(!taskDates[prod])taskDates[prod]={};taskDates[prod][task]=new Date().toISOString().slice(0,10);}
+  else{if(taskDates[prod])delete taskDates[prod][task];}
+  saveAll();renderMetrics();openDrawer(prod);renderTable();
 }
 
 function saveObs(){
@@ -777,7 +817,6 @@ function saveObs(){
 
 // ─── SESSÃO MULTI-PRODUTO ─────────────────────────────
 let selectedProds=new Set();
-
 document.getElementById('s-date').value=new Date().toISOString().slice(0,10);
 
 function renderProdList(){
@@ -786,8 +825,8 @@ function renderProdList(){
   document.getElementById('prod-list').innerHTML=visible.map(p=>{
     const sel=selectedProds.has(p);
     const pct=prodPct(p);const bc=barColor(pct);
-    return`<label style="display:flex;align-items:center;gap:7px;cursor:pointer;padding:5px 8px;border-radius:var(--radius-sm);border:1px solid ${sel?'#2d6a4f':' var(--border)'};background:${sel?'#d8f3dc':'var(--surface)'};font-size:12px;font-family:Arial,sans-serif;color:${sel?'#1b4332':'var(--text2)'};transition:all .1s">
-      <input type="checkbox" ${sel?'checked':''} onchange="toggleProd('${p.replace(/'/g,"\\'")}',this.checked)" style="accent-color:#2d6a4f;width:13px;height:13px;flex-shrink:0">
+    return`<label style="display:flex;align-items:center;gap:7px;cursor:pointer;padding:5px 8px;border-radius:var(--radius-sm);border:1px solid ${sel?'#2d6a4f':'var(--border)'};background:${sel?'#d8f3dc':'var(--surface)'};font-size:12px;font-family:Arial,sans-serif;color:${sel?'#1b4332':'var(--text2)'};transition:all .1s">
+      <input type="checkbox" ${sel?'checked':''} onchange="toggleProd('${esc(p)}',this.checked)" style="accent-color:#2d6a4f;width:13px;height:13px;flex-shrink:0">
       <span style="flex:1">${p}</span>
       <span style="font-size:10px;font-weight:600;color:${bc}">${pct}%</span>
     </label>`;
@@ -808,8 +847,7 @@ function selectAllVisible(){
 }
 
 function clearProds(){
-  selectedProds.clear();
-  renderProdList();renderChips();renderTaskChecks();
+  selectedProds.clear();renderProdList();renderChips();renderTaskChecks();
 }
 
 function renderChips(){
@@ -818,22 +856,19 @@ function renderChips(){
   el.innerHTML=[...selectedProds].map(p=>
     `<span style="display:inline-flex;align-items:center;gap:5px;background:#d6eaf8;color:#1a5276;font-size:11px;font-weight:600;padding:3px 8px;border-radius:99px;font-family:Arial,sans-serif">
       ${p}
-      <button onclick="toggleProd('${p.replace(/'/g,"\\'")}',false)" style="background:none;border:none;cursor:pointer;color:#1a5276;font-size:13px;line-height:1;padding:0">×</button>
+      <button onclick="toggleProd('${esc(p)}',false)" style="background:none;border:none;cursor:pointer;color:#1a5276;font-size:13px;line-height:1;padding:0">×</button>
     </span>`
   ).join('');
 }
 
 function renderTaskChecks(){
   const el=document.getElementById('task-checks');
-  if(!selectedProds.size){
-    el.innerHTML='<div style="font-size:13px;color:var(--text3);font-family:Arial,sans-serif">Selecione os produtos acima para ver as tarefas.</div>';
-    return;
-  }
+  if(!selectedProds.size){el.innerHTML='<div style="font-size:13px;color:var(--text3);font-family:Arial,sans-serif">Selecione os produtos acima para ver as tarefas.</div>';return;}
   let html='';
   [...selectedProds].forEach(prod=>{
     const pct=prodPct(prod);const bc=barColor(pct);
-    html+=`<div style="margin-bottom:12px">
-      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:${bc};margin-bottom:6px;font-family:Arial,sans-serif;display:flex;align-items:center;gap:8px">
+    html+=`<div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:600;color:${bc};margin-bottom:6px;font-family:Arial,sans-serif;display:flex;align-items:center;gap:8px;text-transform:uppercase;letter-spacing:.05em">
         ${prod} <span style="font-weight:400;color:var(--text3)">${pct}%</span>
       </div>
       <div class="ck-grid">${TASKS.map(t=>{
@@ -841,7 +876,7 @@ function renderTaskChecks(){
         if(val==='nv')return`<div class="nv-label">N/A · ${t}</div>`;
         const isDone=val===true;
         return`<label class="ck-label ${isDone?'done':''}">
-          <input type="checkbox" class="ck" ${isDone?'checked':''} onchange="toggleTask('${prod.replace(/'/g,"\\'")}','${t}',this.checked)">
+          <input type="checkbox" class="ck" ${isDone?'checked':''} onchange="toggleTask('${esc(prod)}','${t}',this.checked)">
           ${t}
         </label>`;
       }).join('')}</div>
@@ -864,7 +899,6 @@ function addSession(){
   const hours=parseFloat(document.getElementById('s-hours').value);
   const desc=document.getElementById('s-desc').value.trim();
   if(!date||!hours||!selectedProds.size){alert('Preencha data, horas e selecione ao menos um produto.');return;}
-  // um único registro com array de produtos
   const prods=[...selectedProds];
   const prodsSummary=prods.map(prod=>({
     name:prod,
@@ -881,19 +915,15 @@ function addSession(){
   document.getElementById('task-checks').innerHTML=`<div style="font-size:13px;color:var(--text3);font-family:Arial,sans-serif">✓ Sessão registrada — ${n} produto(s) em ${hours}h!</div>`;
 }
 
-// ─── HISTÓRICO ────────────────────────────────────────
+// ─── HISTÓRICO (FIX índice) ───────────────────────────
 function renderHistory(){
   const fp=document.getElementById('h-filter').value;
   const el=document.getElementById('hist-tbl');
   if(!sessions.length){el.innerHTML='<div class="empty">Nenhuma sessão registrada.</div>';return;}
-
-  // índices reais do array sessions, filtrados e em ordem reversa
   let indices=sessions.map((_,i)=>i);
-  if(fp) indices=indices.filter(i=>sessions[i].person===fp);
-  indices=indices.reverse();
-
+  if(fp)indices=indices.filter(i=>sessions[i].person===fp);
+  indices=indices.slice().reverse();
   if(!indices.length){el.innerHTML='<div class="empty">Nenhuma sessão para este filtro.</div>';return;}
-
   const rows=indices.map(ri=>{
     const s=sessions[ri];
     const d=new Date(s.date+'T12:00:00').toLocaleDateString('pt-BR');
@@ -902,8 +932,8 @@ function renderHistory(){
     const prodsLabel=prodsArr.length===1?prodsArr[0]:`${prodsArr.length} produtos`;
     return`<tr style="cursor:pointer" onclick="openDetailModal(${ri})">
       <td style="width:85px;white-space:nowrap">${d}</td>
-      <td style="width:120px"><span class="pill" style="background:${p.bg};color:${p.tc}">${s.person}</span></td>
-      <td style="width:50px">${s.hours}h</td>
+      <td style="width:115px"><span class="pill" style="background:${p.bg};color:${p.tc}">${s.person}</span></td>
+      <td style="width:48px">${s.hours}h</td>
       <td style="font-weight:600;font-size:12px;color:var(--blue)">${prodsLabel}</td>
       <td style="font-size:11px;color:var(--text2)">${s.desc||'—'}</td>
       <td style="width:56px;white-space:nowrap" onclick="event.stopPropagation()">
@@ -912,10 +942,13 @@ function renderHistory(){
       </td>
     </tr>`;
   }).join('');
-  el.innerHTML=`<div style="font-size:12px;color:var(--text3);font-family:Arial,sans-serif;margin-bottom:8px">Clique em qualquer linha para ver os detalhes.</div><table><thead><tr><th>Data</th><th>Pessoa</th><th>Horas</th><th>Produtos</th><th>Obs</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+  el.innerHTML=`<div style="font-size:12px;color:var(--text3);font-family:Arial,sans-serif;margin-bottom:8px">Clique em qualquer linha para ver os detalhes da sessão.</div>
+    <table><thead><tr><th>Data</th><th>Pessoa</th><th>Horas</th><th>Produtos</th><th>Obs</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
-// modal detalhes
+// modals
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
 function openDetailModal(i){
   const s=sessions[i];
   const d=new Date(s.date+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
@@ -923,40 +956,33 @@ function openDetailModal(i){
   document.getElementById('detail-title').innerHTML=
     `<span class="pill" style="background:${p.bg};color:${p.tc};margin-right:8px">${s.person}</span>${d} · ${s.hours}h`;
 
-  const prodsArr=s.prods||(s.prod?[s.prod]:[]);
+  // FIX #2: suporte completo ao novo formato prods/prodsSummary
   const prodsSummary=s.prodsSummary||(s.prod?[{name:s.prod,tasksDone:s.tasksDone||[]}]:[]);
 
   let html='';
   if(s.desc){
-    html+=`<div style="background:var(--amber-bg);border-radius:var(--radius-sm);padding:8px 12px;font-size:13px;color:var(--amber);font-family:Arial,sans-serif;margin-bottom:12px">
-      📝 ${s.desc}
-    </div>`;
+    html+=`<div style="background:var(--amber-bg);border-radius:var(--radius-sm);padding:8px 12px;font-size:13px;color:var(--amber);font-family:Arial,sans-serif;margin-bottom:12px">📝 ${s.desc}</div>`;
   }
   prodsSummary.forEach(ps=>{
     const pct=prodPct(ps.name);const bc=barColor(pct);
-    const tasks=ps.tasksDone&&ps.tasksDone.length?ps.tasksDone:[];
+    const tasks=ps.tasksDone||[];
     html+=`<div style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;background:var(--bg)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
         <span style="font-weight:600;font-size:13px;font-family:Arial,sans-serif">${ps.name}</span>
-        <span style="font-size:12px;font-weight:600;color:${bc}">${pct}%</span>
+        <span style="font-size:12px;font-weight:600;color:${bc}">${pct}% atual</span>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:4px">
-        ${tasks.length?tasks.map(t=>`<span style="background:#d8f3dc;color:#1b4332;font-size:11px;padding:2px 8px;border-radius:99px;font-family:Arial,sans-serif">✓ ${t}</span>`).join('')
-        :'<span style="font-size:11px;color:var(--text3);font-family:Arial,sans-serif">Nenhuma tarefa marcada nesta sessão</span>'}
+        ${tasks.length
+          ?tasks.map(t=>`<span style="background:#d8f3dc;color:#1b4332;font-size:11px;padding:2px 8px;border-radius:99px;font-family:Arial,sans-serif">✓ ${t}</span>`).join('')
+          :'<span style="font-size:11px;color:var(--text3);font-family:Arial,sans-serif">Nenhuma tarefa marcada nesta sessão</span>'}
       </div>
     </div>`;
   });
-
   document.getElementById('detail-body').innerHTML=html;
-  document.getElementById('detail-overlay').style.display='flex';
-}
-
-function closeDetailModal(){
-  document.getElementById('detail-overlay').style.display='none';
+  document.getElementById('detail-overlay').classList.add('open');
 }
 
 let editIndex=null;
-
 function openEditModal(i){
   editIndex=i;
   const s=sessions[i];
@@ -966,12 +992,7 @@ function openEditModal(i){
   document.getElementById('edit-hours').value=s.hours;
   document.getElementById('edit-prods-display').value=prodsArr.join(', ');
   document.getElementById('edit-desc').value=s.desc||'';
-  document.getElementById('edit-overlay').style.display='flex';
-}
-
-function closeEditModal(){
-  document.getElementById('edit-overlay').style.display='none';
-  editIndex=null;
+  document.getElementById('edit-overlay').classList.add('open');
 }
 
 function saveEditSession(){
@@ -984,14 +1005,16 @@ function saveEditSession(){
   sessions[editIndex]={...sessions[editIndex],date,person,hours,desc};
   sessions.sort((a,b)=>a.date.localeCompare(b.date));
   saveAll();renderMetrics();renderHistory();renderChart();
-  closeEditModal();
+  closeModal('edit-overlay');
 }
 
 function delSession(i){
   if(!confirm('Remover esta sessão?'))return;
-  sessions.splice(i,1);saveAll();renderMetrics();renderHistory();renderChart();
+  sessions.splice(i,1);
+  saveAll();renderMetrics();renderHistory();renderChart();
 }
 
+// ─── GRÁFICO ──────────────────────────────────────────
 function renderChart(){
   const canvas=document.getElementById('hchart');
   if(!sessions.length){canvas.style.display='none';return;}
@@ -1016,16 +1039,21 @@ function renderReport(){
   const hoje=new Date().toLocaleDateString('pt-BR');
   const first=sessions.length?new Date(sessions[0].date+'T12:00:00').toLocaleDateString('pt-BR'):'—';
   const last=sessions.length?new Date(sessions[sessions.length-1].date+'T12:00:00').toLocaleDateString('pt-BR'):'—';
-  const grupos={100:[],g67:[],g33:[],low:[]};
-  PRODUCTS.forEach(p=>{const pct=prodPct(p);if(pct===100)grupos[100].push(p);else if(pct>=67)grupos.g67.push(p);else if(pct>=33)grupos.g33.push(p);else grupos.low.push(p);});
+  const grupos={c100:[],g67:[],g33:[],low:[]};
+  PRODUCTS.forEach(p=>{const pct=prodPct(p);if(pct===100)grupos.c100.push(p);else if(pct>=67)grupos.g67.push(p);else if(pct>=33)grupos.g33.push(p);else grupos.low.push(p);});
   let txt=`RELATÓRIO DE HORAS EXTRAS — STUDYO4\n`;
-  txt+=`Gerado em: ${hoje}   |   Período: ${first} a ${last}\n${'─'.repeat(52)}\n\n`;
+  txt+=`Gerado em: ${hoje}   |   Período: ${first} a ${last}\n${'─'.repeat(54)}\n\n`;
   txt+=`RESUMO\nSessões: ${sessions.length}   |   Total horas extras: ${totalH.toFixed(1)}h\n`;
-  txt+=`Progresso geral: ${overallPct()}%   |   Produtos 100%: ${completedProds()}/81\n\n`;
-  txt+=`PROGRESSO POR TAREFA\n`;
-  TASKS.forEach(t=>{const d=taskTotal(t);txt+=`• ${t}: ${d}/81 (${Math.round(d/81*100)}%)\n`;});
+  txt+=`Progresso geral: ${overallPct()}%   |   Produtos 100%: ${completedProds()}/${TOTAL_PRODS}\n\n`;
+  txt+=`PROGRESSO POR RESPONSÁVEL\n`;
+  PEOPLE.forEach(p=>{
+    const st=personStats(p.name);
+    txt+=`• ${p.name}: ${st.pct}% — ${st.done}/${st.total} tarefas | ${st.hours.toFixed(1)}h extras | ${st.prodsCount} produto(s)\n`;
+  });
+  txt+=`\nPROGRESSO POR TAREFA\n`;
+  TASKS.forEach(t=>{const d=taskTotal(t);txt+=`• ${t}: ${d}/${TOTAL_PRODS} (${Math.round(d/TOTAL_PRODS*100)}%)\n`;});
   txt+=`\nPRODUTOS POR GRUPO\n`;
-  txt+=`Concluídos 100% (${grupos[100].length}): ${grupos[100].join(', ')||'nenhum'}\n`;
+  txt+=`Concluídos 100% (${grupos.c100.length}): ${grupos.c100.join(', ')||'nenhum'}\n`;
   txt+=`Avançados 67-99% (${grupos.g67.length}): ${grupos.g67.join(', ')||'nenhum'}\n`;
   txt+=`Em andamento 33-66% (${grupos.g33.length}): ${grupos.g33.join(', ')||'nenhum'}\n`;
   txt+=`Iniciais 0-32% (${grupos.low.length}): ${grupos.low.join(', ')||'nenhum'}\n`;
@@ -1033,10 +1061,11 @@ function renderReport(){
     txt+=`\nREGISTRO DE SESSÕES\n`;
     sessions.forEach(s=>{
       const d=new Date(s.date+'T12:00:00').toLocaleDateString('pt-BR');
-      txt+=`• ${d} — ${s.person} (${s.hours}h) | ${s.prod}${s.desc?' | '+s.desc:''}\n`;
+      const prodsArr=s.prods||(s.prod?[s.prod]:[]);
+      txt+=`• ${d} — ${s.person} (${s.hours}h) | ${prodsArr.join(', ')}${s.desc?' | '+s.desc:''}\n`;
     });
   }
-  txt+=`\n${'─'.repeat(52)}\nGerado automaticamente — Studyo4`;
+  txt+=`\n${'─'.repeat(54)}\nGerado automaticamente — Studyo4`;
   document.getElementById('rpt-out').innerHTML=`<div class="rpt-block">${txt}</div>`;
 }
 
@@ -1045,89 +1074,88 @@ function copyRpt(){
     .then(()=>alert('Copiado!')).catch(()=>alert('Selecione e copie manualmente.'));
 }
 
-// ─── RELATÓRIO POR COLABORADOR ────────────────────────
+// ─── RELATÓRIO POR COLABORADOR (FIX #2) ───────────────
 let activeCollab='Junior';
 
 function renderCollabTabs(){
   document.getElementById('collab-tabs').innerHTML=PEOPLE.map(p=>
     `<button class="collab-tab ${p.name===activeCollab?'on':''}" onclick="selectCollab('${p.name}')">${p.name}</button>`
   ).join('');
-  renderCollabContent();
+  if(activeCollab) renderCollabContent();
 }
 
 function selectCollab(name){
   activeCollab=name;
-  renderCollabTabs();
+  // atualiza só os botões sem recriar tudo
+  document.querySelectorAll('.collab-tab').forEach(btn=>{
+    btn.classList.toggle('on', btn.textContent===name);
+  });
+  renderCollabContent();
 }
 
 function renderCollabContent(){
-  const p=PEOPLE.find(x=>x.name===activeCollab);
-  const mySessions=sessions.filter(s=>s.person===activeCollab);
   const el=document.getElementById('collab-content');
-
+  const mySessions=sessions.filter(s=>s.person===activeCollab);
   if(!mySessions.length){
-    el.innerHTML=`<div class="empty">Nenhuma sessão registrada para ${activeCollab}.</div>`;
+    el.innerHTML=`<div class="empty">Nenhuma sessão registrada para <strong>${activeCollab}</strong> ainda.<br><span style="font-size:12px">Registre uma sessão na aba "Registrar sessão".</span></div>`;
     return;
   }
-
-  const totalH=mySessions.reduce((a,s)=>a+s.hours,0);
-  // progresso geral
-  let done=0,total=0;
-  PRODUCTS.forEach(prod=>TASKS.forEach(t=>{if(!isNv(prod,t)){total++;if(isOk(prod,t))done++;}}));
-  const pct=total?Math.round(done/total*100):0;
-
-  // agrupar por data
-  const byDate={};
-  mySessions.forEach(s=>{
-    if(!byDate[s.date])byDate[s.date]=[];
-    byDate[s.date].push(s);
-  });
+  const st=personStats(activeCollab);
+  const p=PEOPLE.find(x=>x.name===activeCollab);
+  const bc=barColor(st.pct);
 
   let html=`<div style="display:flex;gap:12px;margin-bottom:1rem;flex-wrap:wrap">
-    <div class="mc" style="flex:1;min-width:120px"><div class="mc-lbl">Horas extras</div><div class="mc-val">${totalH.toFixed(1)}h</div></div>
-    <div class="mc" style="flex:1;min-width:120px"><div class="mc-lbl">Sessões</div><div class="mc-val">${mySessions.length}</div></div>
-    <div class="mc" style="flex:1;min-width:120px"><div class="mc-lbl">Progresso geral</div><div class="mc-val">${pct}%</div></div>
+    <div class="mc" style="flex:1;min-width:110px"><div class="mc-lbl">Horas extras</div><div class="mc-val">${st.hours.toFixed(1)}h</div></div>
+    <div class="mc" style="flex:1;min-width:110px"><div class="mc-lbl">Sessões</div><div class="mc-val">${st.sessions}</div></div>
+    <div class="mc" style="flex:1;min-width:110px"><div class="mc-lbl">Produtos</div><div class="mc-val">${st.prodsCount}</div></div>
+    <div class="mc" style="flex:1;min-width:110px"><div class="mc-lbl">Progresso</div><div class="mc-val" style="color:${bc}">${st.pct}%</div><div class="mc-sub">${st.done}/${st.total} tarefas OK</div></div>
   </div>`;
 
-  // timeline dia a dia
+  // agrupa por data
+  const byDate={};
+  mySessions.forEach(s=>{if(!byDate[s.date])byDate[s.date]=[];byDate[s.date].push(s);});
+
   Object.keys(byDate).sort().reverse().forEach(date=>{
     const d=new Date(date+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});
     const daySessions=byDate[date];
     const dayH=daySessions.reduce((a,s)=>a+s.hours,0);
-    html+=`<div class="collab-day">
-      <div class="collab-day-title">${d} <span>${dayH}h</span></div>`;
+    html+=`<div class="collab-day"><div class="collab-day-title">${d} <span>${dayH}h</span></div>`;
+
     daySessions.forEach(s=>{
-      const prodPctVal=prodPct(s.prod);
-      const bc=barColor(prodPctVal);
-      const prodObs=obs[s.prod]?`<div class="collab-entry-obs">Obs: ${obs[s.prod]}</div>`:'';
-      const tasksDoneStr=s.tasksDone&&s.tasksDone.length?s.tasksDone.join(' · '):'—';
-      html+=`<div class="collab-entry">
-        <div class="collab-entry-prod">
-          <span class="prod-link" onclick="openDrawer('${s.prod.replace(/'/g,"\\'")}');sw('tabela')">${s.prod}</span>
-          <span style="font-size:11px;color:${bc};font-weight:600;margin-left:6px">${prodPctVal}%</span>
-        </div>
-        <div class="collab-entry-tasks">Tarefas OK: ${tasksDoneStr}</div>
-        ${s.desc?`<div class="collab-entry-obs">${s.desc}</div>`:''}
-        ${prodObs}
-      </div>`;
+      // FIX #2: usa novo formato prodsSummary
+      const prodsSummary=s.prodsSummary||(s.prod?[{name:s.prod,tasksDone:s.tasksDone||[]}]:[]);
+      html+=`<div class="collab-entry">`;
+      if(s.desc) html+=`<div class="collab-entry-obs" style="margin-bottom:6px">📝 ${s.desc}</div>`;
+      prodsSummary.forEach(ps=>{
+        const pct=prodPct(ps.name);const bc2=barColor(pct);
+        const tasks=ps.tasksDone||[];
+        const prodObs=obs[ps.name]?`<div class="collab-entry-obs" style="margin-top:3px">Obs: ${obs[ps.name]}</div>`:'';
+        html+=`<div style="margin-bottom:6px;padding:6px 8px;border-radius:var(--radius-sm);background:var(--bg);border:1px solid var(--border)">
+          <div class="collab-entry-prod">
+            <span class="prod-link" onclick="openDrawer('${esc(ps.name)}');sw('tabela')">${ps.name}</span>
+            <span style="font-size:11px;color:${bc2};font-weight:600;margin-left:6px">${pct}%</span>
+          </div>
+          <div class="collab-entry-tasks">✓ ${tasks.length?tasks.join(' · '):'—'}</div>
+          ${prodObs}
+        </div>`;
+      });
+      html+=`</div>`;
     });
     html+=`</div>`;
   });
 
-  // resumo de tarefas concluídas
-  const prodsWorked=[...new Set(mySessions.map(s=>s.prod))];
-  html+=`<div style="margin-top:1rem;font-size:12px;color:var(--text3);font-family:Arial,sans-serif">${prodsWorked.length} produto(s) trabalhado(s) neste período.</div>`;
-
   el.innerHTML=html;
 }
 
-// ─── RENDER ALL ───────────────────────────────────────
+// ─── INIT ─────────────────────────────────────────────
 function renderAll(){renderVisao();renderMetrics();}
 
-// ─── INIT ─────────────────────────────────────────────
 window.addEventListener('load',()=>{
-  if(typeof google!=='undefined'&&google.accounts)initGoogleAuth();
-  else{const t=setInterval(()=>{if(typeof google!=='undefined'&&google.accounts){clearInterval(t);initGoogleAuth();}},300);}
+  const tryInit=()=>{
+    if(typeof google!=='undefined'&&google.accounts){initGoogleAuth();}
+    else setTimeout(tryInit,300);
+  };
+  tryInit();
   renderAll();
 });
 </script>
