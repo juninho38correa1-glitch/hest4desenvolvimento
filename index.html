@@ -884,14 +884,20 @@ function addSession(){
 // ─── HISTÓRICO ────────────────────────────────────────
 function renderHistory(){
   const fp=document.getElementById('h-filter').value;
-  const list=fp?sessions.filter(s=>s.person===fp):sessions;
   const el=document.getElementById('hist-tbl');
-  if(!list.length){el.innerHTML='<div class="empty">Nenhuma sessão registrada.</div>';return;}
-  const rows=[...list].reverse().map(s=>{
-    const ri=sessions.indexOf(s);
+  if(!sessions.length){el.innerHTML='<div class="empty">Nenhuma sessão registrada.</div>';return;}
+
+  // índices reais do array sessions, filtrados e em ordem reversa
+  let indices=sessions.map((_,i)=>i);
+  if(fp) indices=indices.filter(i=>sessions[i].person===fp);
+  indices=indices.reverse();
+
+  if(!indices.length){el.innerHTML='<div class="empty">Nenhuma sessão para este filtro.</div>';return;}
+
+  const rows=indices.map(ri=>{
+    const s=sessions[ri];
     const d=new Date(s.date+'T12:00:00').toLocaleDateString('pt-BR');
     const p=PEOPLE.find(x=>x.name===s.person)||{bg:'#eee',tc:'#444'};
-    // suporte a sessões antigas (prod único) e novas (prods array)
     const prodsArr=s.prods||(s.prod?[s.prod]:[]);
     const prodsLabel=prodsArr.length===1?prodsArr[0]:`${prodsArr.length} produtos`;
     return`<tr style="cursor:pointer" onclick="openDetailModal(${ri})">
