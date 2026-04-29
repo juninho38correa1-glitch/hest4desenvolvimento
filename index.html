@@ -304,7 +304,7 @@ tr:hover td{background:var(--surface2)}
     <div class="card">
       <div class="sel-row">
         <div class="fg"><label>Filtrar pessoa</label>
-          <select id="h-filter" onchange="renderHistory()">
+          <select id="h-filter" onchange="renderHistory();renderChart()">
             <option value="">Todas</option>
             <option>Junior</option><option>Pablo</option><option>Lucas</option><option>Erika</option>
           </select>
@@ -1166,20 +1166,103 @@ async function delSession(i){
 // ─── GRÁFICO ──────────────────────────────────────────
 function renderChart(){
   const canvas=document.getElementById('hchart');
+  const fp=document.getElementById('h-filter').value;
   if(!sessions.length){canvas.style.display='none';return;}
   canvas.style.display='block';
-  const colors={Junior:'#7c5cbf',Pablo:'#2980b9',Lucas:'#27ae60',Erika:'#e67e22'};
-  const dates=[...new Set(sessions.map(s=>s.date))].sort();
-  const datasets=PEOPLE.map(p=>({
-    label:p.name,
-    data:dates.map(d=>sessions.filter(s=>s.date===d&&s.person===p.name).reduce((a,s)=>a+s.hours,0)),
-    backgroundColor:colors[p.name],borderRadius:4,
-  }));
-  const labels=dates.map(d=>new Date(d+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}));
   if(chartInst)chartInst.destroy();
-  chartInst=new Chart(canvas,{type:'bar',data:{labels,datasets},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-    scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true,ticks:{stepSize:1}}}}});
+
+  if(fp){
+    // GRÁFICO INDIVIDUAL: barras por dia, cada barra = um produto diferente
+    const personSessions=sessions.filter(s=>s.person===fp);
+    if(!personSessions.length){canvas.style.display='none';return;}
+
+    const dates=[...new Set(personSessions.map(s=>s.date))].sort();
+    const labels=dates.map(d=>new Date(d+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}));
+
+    // coleta todos os produtos únicos dessa pessoa
+    const allProds=new Set();
+    personSessions.forEach(s=>{
+      const arr=s.prods||(s.prod?[s.prod]:[]);
+      arr.forEach(p=>allProds.add(p));
+    });
+    const prodList=[...allProds];
+
+    // paleta de cores para os produtos
+    const palette=['#4e79a7','#f28e2b','#e15759','#76b7b2','#59a14f','#edc948','#b07aa1','#ff9da7','#9c755f','#bab0ac','#1a5276','#2d6a4f','#7d5a00','#922b21','#4a2a7a'];
+    const prodColors={};
+    prodList.forEach((p,i)=>prodColors[p]=palette[i%palette.length]);
+
+    // dataset por produto
+    const datasets=prodList.map(prod=>({
+      label:prod,
+      data:dates.map(date=>{
+        let h=0;
+        personSessions.filter(s=>s.date===date).forEach(s=>{
+          const arr=s.prods||(s.prod?[s.prod]:[]);
+          if(arr.includes(prod)) h+=s.hours/arr.length; // distribui horas entre produtos da sessão
+        });
+        return Math.round(h*100)/100;
+      }),
+      backgroundColor:prodColors[prod],
+      borderRadius:3,
+    })).filter(ds=>ds.data.some(v=>v>0));
+
+    const p=PEOPLE.find(x=>x.name===fp)||{name:fp};
+    const totalH=personSessions.reduce((a,s)=>a+s.hours,0);
+
+    chartInst=new Chart(canvas,{
+      type:'bar',
+      data:{labels,datasets},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{
+            display:prodList.length<=8,
+            position:'bottom',
+            labels:{font:{size:10},boxWidth:12,padding:8}
+          },
+          tooltip:{
+            callbacks:{
+              title:items=>`${fp} — ${items[0].label}`,
+              label:item=>`${item.dataset.label}: ${fmtHours(item.raw)}`,
+              footer:items=>{
+                const total=items.reduce((a,i)=>a+i.raw,0);
+                return`Total: ${fmtHours(total)}`;
+              }
+            }
+          }
+        },
+        scales:{
+          x:{stacked:true},
+          y:{stacked:true,beginAtZero:true,ticks:{
+            callback:v=>v===0?'0':fmtHours(v),stepSize:1
+          }}
+        }
+      }
+    });
+
+  } else {
+    // GRÁFICO GERAL: barras empilhadas por pessoa
+    const colors={Junior:'#7c5cbf',Pablo:'#2980b9',Lucas:'#27ae60',Erika:'#e67e22'};
+    const dates=[...new Set(sessions.map(s=>s.date))].sort();
+    const datasets=PEOPLE.map(p=>({
+      label:p.name,
+      data:dates.map(d=>sessions.filter(s=>s.date===d&&s.person===p.name).reduce((a,s)=>a+s.hours,0)),
+      backgroundColor:colors[p.name],borderRadius:3,
+    }));
+    const labels=dates.map(d=>new Date(d+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}));
+    chartInst=new Chart(canvas,{
+      type:'bar',data:{labels,datasets},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{display:true,position:'bottom',labels:{font:{size:11},boxWidth:12,padding:8}},
+          tooltip:{callbacks:{label:i=>`${i.dataset.label}: ${fmtHours(i.raw)}`}}
+        },
+        scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true,ticks:{callback:v=>v===0?'0':fmtHours(v),stepSize:1}}}
+      }
+    });
+  }
 }
 
 // ─── RELATÓRIO GERAL ──────────────────────────────────
