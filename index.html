@@ -483,7 +483,21 @@ function saveLocal(){
   localStorage.setItem('s04v6_obs',     JSON.stringify(obs));
 }
 
-// FIX #3: debounce — agrupa múltiplos saves em 1 chamada ao Drive (1.5s)
+// saveAllNow: para ações críticas (sessões, deleções) — salva imediatamente
+async function saveAllNow(){
+  saveLocal();
+  clearTimeout(saveTimer);
+  if(isTokenValid()){
+    await saveToGDrive();
+  } else if(window.tokenClient){
+    // tenta renovar token e salvar
+    const ok=await ensureToken();
+    if(ok) await saveToGDrive();
+    else showSyncErr('token expirado — dados no localStorage');
+  }
+}
+
+// saveAll: para ações não críticas (checkboxes, obs) — debounce 1.5s
 function saveAll(){
   saveLocal();
   clearTimeout(saveTimer);
@@ -893,7 +907,7 @@ function toggleTask(prod,task,val){
   saveAll();renderMetrics();renderTaskChecks();renderProdList();
 }
 
-function addSession(){
+async function addSession(){
   const date=document.getElementById('s-date').value;
   const person=document.getElementById('s-person').value;
   const hours=parseFloat(document.getElementById('s-hours').value);
@@ -906,13 +920,19 @@ function addSession(){
   }));
   sessions.push({date,person,hours,desc,prods,prodsSummary,ts:Date.now()});
   sessions.sort((a,b)=>a.date.localeCompare(b.date));
-  saveAll();renderMetrics();
+
+  // feedback imediato
   const n=prods.length;
+  document.getElementById('task-checks').innerHTML=`<div style="font-size:13px;color:var(--text3);font-family:Arial,sans-serif">⏳ Salvando sessão...</div>`;
   document.getElementById('s-hours').value='';
   document.getElementById('s-desc').value='';
   selectedProds.clear();
-  renderProdList();renderChips();
-  document.getElementById('task-checks').innerHTML=`<div style="font-size:13px;color:var(--text3);font-family:Arial,sans-serif">✓ Sessão registrada — ${n} produto(s) em ${hours}h!</div>`;
+  renderProdList();renderChips();renderMetrics();
+
+  // salva imediatamente — crítico
+  await saveAllNow();
+
+  document.getElementById('task-checks').innerHTML=`<div style="font-size:13px;color:var(--green);font-family:Arial,sans-serif">✓ Sessão salva com sucesso — ${n} produto(s) em ${hours}h!</div>`;
 }
 
 // ─── HISTÓRICO (FIX índice) ───────────────────────────
@@ -995,7 +1015,7 @@ function openEditModal(i){
   document.getElementById('edit-overlay').classList.add('open');
 }
 
-function saveEditSession(){
+async function saveEditSession(){
   if(editIndex===null)return;
   const date=document.getElementById('edit-date').value;
   const person=document.getElementById('edit-person').value;
@@ -1004,14 +1024,16 @@ function saveEditSession(){
   if(!date||!hours){alert('Preencha data e horas.');return;}
   sessions[editIndex]={...sessions[editIndex],date,person,hours,desc};
   sessions.sort((a,b)=>a.date.localeCompare(b.date));
-  saveAll();renderMetrics();renderHistory();renderChart();
+  await saveAllNow();
+  renderMetrics();renderHistory();renderChart();
   closeModal('edit-overlay');
 }
 
-function delSession(i){
+async function delSession(i){
   if(!confirm('Remover esta sessão?'))return;
   sessions.splice(i,1);
-  saveAll();renderMetrics();renderHistory();renderChart();
+  await saveAllNow();
+  renderMetrics();renderHistory();renderChart();
 }
 
 // ─── GRÁFICO ──────────────────────────────────────────
@@ -1148,7 +1170,15 @@ function renderCollabContent(){
 }
 
 // ─── INIT ─────────────────────────────────────────────
-function renderAll(){renderVisao();renderMetrics();}
+function renderAll(){
+  renderVisao();
+  renderMetrics();
+  // avisa se há dados no localStorage mas Drive não está conectado
+  if(!isTokenValid()&&sessions.length>0){
+    document.getElementById('drive-detail').textContent=
+      `⚠️ ${sessions.length} sessão(ões) no localStorage — conecte ao Drive para garantir o salvamento.`;
+  }
+}
 
 window.addEventListener('load',()=>{
   const tryInit=()=>{
