@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Studyo4 — Horas Extras</title>
+<title>Desenvolvimento - Studyo4</title>
 <style>
 :root{
   --bg:#f7f6f3;--surface:#fff;--surface2:#f0efe9;--border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.15);
@@ -222,6 +222,7 @@ tr:hover td{background:var(--surface2)}
       <button class="tab" onclick="sw('relatorio')" id="tab-relatorio" style="display:none">Relatório geral</button>
       <button class="tab" onclick="sw('colaborador')" id="tab-colaborador" style="display:none">Por colaborador</button>
       <button class="tab admin-tab" onclick="sw('admin')" id="tab-admin" style="display:none">⚙ Usuários</button>
+      <button class="tab" onclick="sw('conta')" id="tab-conta">👤 Minha conta</button>
     </div>
 
     <div class="sec on" id="sec-visao">
@@ -311,6 +312,24 @@ tr:hover td{background:var(--surface2)}
       </div>
     </div>
 
+    <div class="sec" id="sec-conta">
+      <div class="card" style="max-width:480px">
+        <div class="card-ttl">Minha conta</div>
+        <div id="conta-info" style="margin-bottom:1.25rem;font-family:Arial,sans-serif;font-size:13px;color:var(--text2)"></div>
+        <div style="border-top:1px solid var(--border);padding-top:1rem">
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;font-family:Arial,sans-serif">Alterar senha</div>
+          <div id="conta-err" class="login-err err-red"></div>
+          <div id="conta-ok" class="login-err err-green"></div>
+          <div class="form-row" style="grid-template-columns:1fr">
+            <div class="fg"><label>Senha atual</label><input type="password" id="conta-pass-atual" placeholder="••••••"></div>
+            <div class="fg"><label>Nova senha</label><input type="password" id="conta-pass-nova" placeholder="••••••"></div>
+            <div class="fg"><label>Confirmar nova senha</label><input type="password" id="conta-pass-nova2" placeholder="••••••" onkeydown="if(event.key==='Enter')changePassword()"></div>
+          </div>
+          <button class="btn btn-p" onclick="changePassword()" style="margin-top:4px">Salvar nova senha</button>
+        </div>
+      </div>
+    </div>
+
     <div class="sec" id="sec-admin">
       <div class="card">
         <div class="card-ttl">Usuários ativos</div>
@@ -334,7 +353,23 @@ tr:hover td{background:var(--surface2)}
   </div>
 </div>
 
-<!-- MODAIS -->
+<!-- MODAL REDEFINIR SENHA (admin) -->
+<div class="modal-overlay" id="reset-pass-overlay" onclick="closeModal('reset-pass-overlay')">
+  <div class="modal-box" onclick="event.stopPropagation()" style="max-width:400px">
+    <div class="modal-header">
+      <div class="modal-title">Redefinir senha — <span id="reset-user-name"></span></div>
+      <button class="modal-close" onclick="closeModal('reset-pass-overlay')">×</button>
+    </div>
+    <div id="reset-err" class="login-err err-red"></div>
+    <div id="reset-ok" class="login-err err-green"></div>
+    <div class="fg" style="margin-bottom:10px"><label>Nova senha</label><input type="password" id="reset-new-pass" placeholder="••••••"></div>
+    <div class="fg" style="margin-bottom:1.25rem"><label>Confirmar senha</label><input type="password" id="reset-new-pass2" placeholder="••••••"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px">
+      <button class="btn" onclick="closeModal('reset-pass-overlay')">Cancelar</button>
+      <button class="btn btn-p" onclick="saveResetPass()">Salvar nova senha</button>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="detail-overlay" onclick="closeModal('detail-overlay')">
   <div class="modal-box" onclick="event.stopPropagation()">
     <div class="modal-header"><div class="modal-title" id="detail-title"></div><button class="modal-close" onclick="closeModal('detail-overlay')">×</button></div>
@@ -724,6 +759,7 @@ function sw(t){
   if(t==='relatorio'){renderReport();renderMetrics();}
   if(t==='colaborador'){activeCollab=activeCollab||PEOPLE_CFG[0]?.name;renderCollabTabs();renderMetrics();}
   if(t==='admin')renderAdmin();
+  if(t==='conta')renderConta();
 }
 
 // ══════════════════════════════════════════════════════
@@ -1135,11 +1171,17 @@ function renderAdmin(){
   const el=document.getElementById('users-list');
   el.innerHTML=users.map((u,i)=>{
     const p=PEOPLE_CFG.find(x=>x.name===u.name)||{bg:'#eee',tc:'#444'};
-    return`<div class="user-row">
+    const senhaLegivel=atob(u.password||'');
+    return`<div class="user-row" style="flex-wrap:wrap;gap:8px">
       <div class="user-avatar" style="background:${p.bg};color:${p.tc};width:32px;height:32px;font-size:11px">${u.name.slice(0,2).toUpperCase()}</div>
-      <div class="user-row-name">${u.name} <span style="font-weight:400;color:var(--text3);font-size:12px">@${u.username}</span></div>
+      <div class="user-row-name" style="min-width:120px">${u.name} <span style="font-weight:400;color:var(--text3);font-size:12px">@${u.username}</span></div>
       <span class="${u.role==='admin'?'role-admin':'role-user'}">${u.role==='admin'?'Admin':'Funcionário'}</span>
       <span class="${u.active?'status-active':'status-inactive'}">${u.active?'Ativo':'Inativo'}</span>
+      <div style="display:flex;align-items:center;gap:6px;font-family:Arial,sans-serif;font-size:12px;background:var(--surface2);padding:3px 10px;border-radius:var(--radius-sm);border:1px solid var(--border)">
+        🔑 <span id="pass-display-${i}" style="letter-spacing:.05em">${'•'.repeat(senhaLegivel.length)}</span>
+        <button onclick="togglePassView(${i},'${senhaLegivel.replace(/'/g,"\\'")}',this)" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--blue);font-family:Arial,sans-serif">ver</button>
+      </div>
+      <button class="btn btn-sm" onclick="openResetPass(${i})">🔒 Redefinir senha</button>
       ${u.username!=='junior'?`<button class="btn btn-sm" onclick="toggleUserActive(${i})">${u.active?'Desativar':'Ativar'}</button><button class="del-btn" onclick="removeUser(${i})">×</button>`:''}
     </div>`;
   }).join('');
@@ -1150,6 +1192,75 @@ function renderAdmin(){
     <button class="btn btn-sm btn-p" onclick="approvePending(${i})">✓ Aprovar</button>
     <button class="btn btn-sm" onclick="rejectPending(${i})" style="color:var(--red)">✗ Recusar</button>
   </div>`).join('');
+}
+
+function togglePassView(i, pass, btn){
+  const el=document.getElementById('pass-display-'+i);
+  if(btn.textContent==='ver'){
+    el.textContent=pass;btn.textContent='ocultar';
+  }else{
+    el.textContent='•'.repeat(pass.length);btn.textContent='ver';
+  }
+}
+
+let resetPassIndex=null;
+function openResetPass(i){
+  resetPassIndex=i;
+  document.getElementById('reset-user-name').textContent=users[i].name;
+  document.getElementById('reset-new-pass').value='';
+  document.getElementById('reset-new-pass2').value='';
+  document.getElementById('reset-err').style.display='none';
+  document.getElementById('reset-ok').style.display='none';
+  document.getElementById('reset-pass-overlay').classList.add('open');
+}
+async function saveResetPass(){
+  const pass=document.getElementById('reset-new-pass').value;
+  const pass2=document.getElementById('reset-new-pass2').value;
+  const err=document.getElementById('reset-err');const ok=document.getElementById('reset-ok');
+  err.style.display='none';ok.style.display='none';
+  if(!pass){err.style.display='block';err.textContent='Digite a nova senha.';return;}
+  if(pass!==pass2){err.style.display='block';err.textContent='As senhas não coincidem.';return;}
+  if(pass.length<4){err.style.display='block';err.textContent='Mínimo 4 caracteres.';return;}
+  users[resetPassIndex].password=btoa(pass);
+  await saveUsersOnly();
+  ok.style.display='block';ok.textContent='✓ Senha redefinida com sucesso!';
+  setTimeout(()=>closeModal('reset-pass-overlay'),1500);
+  renderAdmin();
+}
+
+// ══════════════════════════════════════════════════════
+// MINHA CONTA
+// ══════════════════════════════════════════════════════
+function renderConta(){
+  if(!currentUser)return;
+  const p=PEOPLE_CFG.find(x=>x.name===currentUser.name)||{bg:'#eee',tc:'#444'};
+  document.getElementById('conta-info').innerHTML=`
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 0">
+      <div class="user-avatar" style="background:${p.bg};color:${p.tc};width:44px;height:44px;font-size:15px">${currentUser.name.slice(0,2).toUpperCase()}</div>
+      <div>
+        <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:2px">${currentUser.name}</div>
+        <div style="color:var(--text3)">@${currentUser.username} · ${currentUser.role==='admin'?'Administrador':'Funcionário'}</div>
+      </div>
+    </div>`;
+  ['conta-err','conta-ok'].forEach(id=>{document.getElementById(id).style.display='none';});
+  ['conta-pass-atual','conta-pass-nova','conta-pass-nova2'].forEach(id=>{document.getElementById(id).value='';});
+}
+
+async function changePassword(){
+  const atual=document.getElementById('conta-pass-atual').value;
+  const nova=document.getElementById('conta-pass-nova').value;
+  const nova2=document.getElementById('conta-pass-nova2').value;
+  const err=document.getElementById('conta-err');const ok=document.getElementById('conta-ok');
+  err.style.display='none';ok.style.display='none';
+  if(!atual||!nova||!nova2){err.style.display='block';err.textContent='Preencha todos os campos.';return;}
+  if(btoa(atual)!==currentUser.password){err.style.display='block';err.textContent='Senha atual incorreta.';return;}
+  if(nova!==nova2){err.style.display='block';err.textContent='As novas senhas não coincidem.';return;}
+  if(nova.length<4){err.style.display='block';err.textContent='Mínimo 4 caracteres.';return;}
+  const idx=users.findIndex(u=>u.username===currentUser.username);
+  if(idx>=0){users[idx].password=btoa(nova);currentUser.password=btoa(nova);}
+  await saveUsersOnly();
+  ok.style.display='block';ok.textContent='✓ Senha alterada com sucesso!';
+  ['conta-pass-atual','conta-pass-nova','conta-pass-nova2'].forEach(id=>{document.getElementById(id).value='';});
 }
 async function addUser(){
   const name=document.getElementById('new-name').value.trim();
