@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Desenvolvimento-ST4</title>
+<title>Studyo4 — Horas Extras</title>
 <style>
 :root{
   --bg:#f7f6f3;--surface:#fff;--surface2:#f0efe9;--border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.15);
@@ -161,7 +161,7 @@ tr:hover td{background:var(--surface2)}
 <div id="login-screen" class="login-screen" style="display:none">
   <div class="login-box">
     <div class="login-logo">STUDYO4</div>
-    <div class="login-sub">Gestão inteligente</div>
+    <div class="login-sub">Controle de Horas Extras</div>
     <div id="login-err" class="login-err err-red"></div>
     <div class="form-row" style="grid-template-columns:1fr">
       <div class="fg"><label>Usuário</label><input type="text" id="li-user" placeholder="seu.usuario" autocomplete="username"></div>
@@ -194,9 +194,10 @@ tr:hover td{background:var(--surface2)}
 <!-- APP -->
 <div id="app" style="display:none">
   <div class="topbar">
-    <div class="logo">Desenvolvimento <span>/ Studyo 4 estofados</span></div>
+    <div class="logo">STUDYO4 <span>/ Horas Extras</span></div>
     <div class="user-area">
       <div class="sync-label" id="sync-label"><span class="sync-dot" id="sync-dot" style="background:#a09e98"></span><span id="sync-txt">–</span></div>
+      <button id="btn-save-retry" onclick="saveSessionsOnly()" style="display:none;font-size:12px;padding:4px 10px;border:1px solid var(--red);border-radius:var(--radius-sm);cursor:pointer;background:var(--red-bg);color:var(--red);font-family:Arial,sans-serif">↻ Tentar salvar</button>
       <div class="user-pill">
         <div class="user-avatar" id="top-avatar"></div>
         <span id="top-name" style="font-family:Arial,sans-serif;font-size:13px"></span>
@@ -486,12 +487,16 @@ async function sbGet(key){
 }
 
 async function sbSet(key, value){
-  const r = await fetch(`${SB_URL}/rest/v1/app_data?key=eq.${key}`, {
-    method: 'PATCH',
-    headers: {...sbHeaders, 'Prefer': 'return=minimal'},
-    body: JSON.stringify({value, updated_at: new Date().toISOString()})
+  // UPSERT — cria se não existe, atualiza se existe
+  const r = await fetch(`${SB_URL}/rest/v1/app_data`, {
+    method: 'POST',
+    headers: {...sbHeaders, 'Prefer': 'resolution=merge-duplicates,return=minimal'},
+    body: JSON.stringify({key, value, updated_at: new Date().toISOString()})
   });
-  if(!r.ok) throw new Error('sbSet '+r.status);
+  if(!r.ok){
+    const txt = await r.text();
+    throw new Error(`sbSet ${r.status}: ${txt}`);
+  }
 }
 
 async function sbSetSessions(data){
@@ -748,7 +753,9 @@ function loginSuccess(user){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('register-screen').style.display='none';
   document.getElementById('app').style.display='block';
-  renderAll();
+  // recarrega dados frescos do Supabase a cada login
+  showLoading('Carregando dados...');
+  loadAllFromSupabase().then(()=>{hideLoading();renderAll();}).catch(()=>{hideLoading();renderAll();});
 }
 
 function doLogout(){
@@ -777,7 +784,12 @@ function overallPct(){
 function completedProds(){return PRODUCTS.filter(p=>TASKS.every(t=>isOk(p,t)||isNv(p,t))).length;}
 
 function personStats(pname){
-  const mySessions=sessions.filter(s=>s.person===pname);
+  // busca por nome atual — inclui sessões antigas (por person) e novas (por username)
+  const u=users.find(x=>x.name===pname);
+  const mySessions=sessions.filter(s=>
+    s.person===pname ||
+    (u && s.username===u.username)
+  );
   const myHours=mySessions.reduce((a,s)=>a+s.hours,0);
   const prodsSet=new Set();
   mySessions.forEach(s=>{const arr=s.prods||(s.prod?[s.prod]:[]);arr.forEach(p=>prodsSet.add(p));});
@@ -788,7 +800,27 @@ function personStats(pname){
 
 function visibleSessions(){
   if(!currentUser)return[];
-  return isAdmin()?sessions:sessions.filter(s=>s.person===currentUser.name);
+  if(isAdmin())return sessions;
+  // busca por username (novo) OU por person/name (compatibilidade com sessões antigas)
+  return sessions.filter(s=>
+    s.username===currentUser.username ||
+    s.person===currentUser.name
+  );
+}
+
+// resolve nome exibido atual de uma sessão (mesmo se nome foi renomeado)
+function sessionPersonName(s){
+  if(s.username){
+    const u=users.find(x=>x.username===s.username);
+    if(u) return u.name; // nome atual do usuário
+  }
+  return s.person; // fallback para sessões antigas
+}
+
+// resolve config de cor de uma sessão
+function sessionPersonCfg(s){
+  const name=sessionPersonName(s);
+  return PEOPLE_CFG.find(x=>x.name===name)||{bg:'#f0efe9',tc:'#6b6860'};
 }
 
 // ══════════════════════════════════════════════════════
@@ -1001,18 +1033,37 @@ async function addSession(){
   if(totalMin<=0){alert('Horário inválido.');return;}
   const hours=Math.round((totalMin/60)*1000)/1000;
   const prods=[...selectedProds];
-  const prodsSummary=prods.map(prod=>({name:prod,tasksDone:TASKS.filter(t=>isOk(prod,t))}));
-  sessions.push({date,person:currentUser.name,hours,start,end,desc,prods,prodsSummary,ts:Date.now()});
+
+  // snapshot das tarefas ticadas AGORA (não recalcula depois)
+  const prodsSummary=prods.map(prod=>{
+    const tasksBefore=TASKS.filter(t=>isOk(prod,t));
+    return{name:prod, tasksDone:tasksBefore, tasksSnapshot:tasksBefore};
+  });
+
+  sessions.push({
+    date,
+    person: currentUser.name,
+    username: currentUser.username, // chave permanente — não muda se nome mudar
+    hours, start, end, desc,
+    prods, prodsSummary,
+    ts: Date.now()
+  });
   sessions.sort((a,b)=>a.date.localeCompare(b.date));
+
   document.getElementById('task-checks').innerHTML=`<div style="font-size:13px;color:var(--text3);font-family:Arial,sans-serif">⏳ Salvando...</div>`;
   ['s-start','s-end','s-desc'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('hours-preview').style.display='none';
   selectedProds.clear();renderProdList();renderChips();renderMetrics();
+
   try{
     await saveSessionsOnly();
     document.getElementById('task-checks').innerHTML=`<div style="font-size:13px;color:var(--green);font-family:Arial,sans-serif">✓ Salvo! ${start}→${end} (${fmtHours(hours)}) · ${prods.length} produto(s)</div>`;
   }catch(e){
-    document.getElementById('task-checks').innerHTML=`<div style="font-size:13px;color:var(--red);font-family:Arial,sans-serif">⚠️ Erro ao salvar. Tente novamente.</div>`;
+    // se falhar no Supabase, avisa mas não perde os dados (ainda estão em memória)
+    console.error('Erro ao salvar sessão:', e);
+    document.getElementById('task-checks').innerHTML=`<div style="font-size:13px;color:var(--red);font-family:Arial,sans-serif">⚠️ Erro ao salvar no banco. Tente clicar em "Salvar agora" na barra superior.</div>`;
+    // botão de retry
+    document.getElementById('btn-save-retry').style.display='inline-block';
   }
 }
 
@@ -1031,14 +1082,15 @@ function renderHistory(){
   const rows=indices.map(ri=>{
     const s=sessions[ri];if(!s)return'';
     const d=new Date(s.date+'T12:00:00').toLocaleDateString('pt-BR');
-    const p=PEOPLE_CFG.find(x=>x.name===s.person)||{bg:'#eee',tc:'#444'};
+    const nomePessoa=sessionPersonName(s);
+    const p=sessionPersonCfg(s);
     const prodsArr=s.prods||(s.prod?[s.prod]:[]);
     const prodsLabel=prodsArr.length===1?prodsArr[0]:`${prodsArr.length} produtos`;
     const timeLabel=s.start&&s.end?`${s.start}–${s.end} `:'';
     const canEdit=isAdmin()||s.person===currentUser?.name;
     return`<tr style="cursor:pointer" onclick="openDetailModal(${ri})">
       <td style="width:85px;white-space:nowrap">${d}</td>
-      <td style="width:110px"><span class="pill" style="background:${p.bg};color:${p.tc}">${s.person}</span></td>
+      <td style="width:110px"><span class="pill" style="background:${p.bg};color:${p.tc}">${nomePessoa}</span></td>
       <td style="width:90px;font-family:Arial,sans-serif;font-size:11px;color:var(--text2)">${timeLabel}<span style="font-weight:600;color:var(--text)">${fmtHours(s.hours)}</span></td>
       <td style="font-weight:600;font-size:12px;color:var(--blue)">${prodsLabel}</td>
       <td style="font-size:11px;color:var(--text2)">${s.desc||'—'}</td>
@@ -1062,10 +1114,19 @@ function openDetailModal(i){
   let html='';
   if(s.desc)html+=`<div style="background:var(--amber-bg);border-radius:var(--radius-sm);padding:8px 12px;font-size:13px;color:var(--amber);font-family:Arial,sans-serif;margin-bottom:12px">📝 ${s.desc}</div>`;
   ps.forEach(x=>{
-    const pct=prodPct(x.name);const bc=barColor(pct);const tasks=x.tasksDone||[];
+    // tasksSnapshot = tarefas ticadas no momento do registro (novas sessões)
+    // tasksDone = fallback para sessões antigas
+    const tasksNoMomento = x.tasksSnapshot || x.tasksDone || [];
+    const pctAtual=prodPct(x.name);const bc=barColor(pctAtual);
     html+=`<div style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;background:var(--bg)">
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-weight:600;font-size:13px;font-family:Arial,sans-serif">${x.name}</span><span style="font-size:12px;font-weight:600;color:${bc}">${pct}%</span></div>
-      <div style="display:flex;flex-wrap:wrap;gap:4px">${tasks.length?tasks.map(t=>`<span style="background:#d8f3dc;color:#1b4332;font-size:11px;padding:2px 8px;border-radius:99px;font-family:Arial,sans-serif">✓ ${t}</span>`).join(''):'<span style="font-size:11px;color:var(--text3);font-family:Arial,sans-serif">–</span>'}</div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span style="font-weight:600;font-size:13px;font-family:Arial,sans-serif">${x.name}</span>
+        <span style="font-size:11px;color:${bc};font-weight:600">${pctAtual}% hoje</span>
+      </div>
+      <div style="font-size:11px;color:var(--text3);font-family:Arial,sans-serif;margin-bottom:5px">Tarefas OK nesta sessão:</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">${tasksNoMomento.length
+        ?tasksNoMomento.map(t=>`<span style="background:#d8f3dc;color:#1b4332;font-size:11px;padding:2px 8px;border-radius:99px;font-family:Arial,sans-serif">✓ ${t}</span>`).join('')
+        :'<span style="font-size:11px;color:var(--text3);font-family:Arial,sans-serif">Nenhuma tarefa marcada nesta sessão</span>'}</div>
     </div>`;
   });
   document.getElementById('detail-body').innerHTML=html;
@@ -1307,15 +1368,30 @@ async function saveEditUser(){
   const err=document.getElementById('edit-user-err');const ok=document.getElementById('edit-user-ok');
   err.style.display='none';ok.style.display='none';
   if(!name){err.style.display='block';err.textContent='Nome não pode ser vazio.';return;}
+
+  const oldName=users[editUserIndex].name;
+  const uname=users[editUserIndex].username;
+
   users[editUserIndex].name=name;
   users[editUserIndex].role=role;
   users[editUserIndex].color=color;
-  // atualiza sessões existentes com o nome antigo para o novo nome
-  const oldName=users[editUserIndex].name;
-  await saveUsersOnly();
-  ok.style.display='block';ok.textContent='✓ Usuário atualizado!';
-  setTimeout(()=>closeModal('edit-user-overlay'),1200);
+
+  // migra sessões antigas que não têm username: amarra pelo nome antigo
+  let migrated=0;
+  sessions.forEach(s=>{
+    if(!s.username && s.person===oldName){
+      s.username=uname; // amarra para sempre
+      migrated++;
+    }
+    // atualiza campo person para exibição (mesmo com username já amarrado)
+    if(s.username===uname) s.person=name;
+  });
+
+  await Promise.all([saveUsersOnly(), migrated>0?saveSessionsOnly():Promise.resolve()]);
+  ok.style.display='block';ok.textContent=`✓ Atualizado! ${migrated>0?`(${migrated} sessão(ões) migrada(s))`:''}`;
+  setTimeout(()=>closeModal('edit-user-overlay'),1400);
   renderAdmin();
+  if(currentUser?.username===uname) currentUser.name=name;
 }
 // ══════════════════════════════════════════════════════
 function renderConta(){
