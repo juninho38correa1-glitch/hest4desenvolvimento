@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Desenvolvimento — St4</title>
+<title>Studyo4 — Horas Extras</title>
 <style>
 :root{
   --bg:#f7f6f3;--surface:#fff;--surface2:#f0efe9;--border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.15);
@@ -364,7 +364,45 @@ tr:hover td{background:var(--surface2)}
       © Junior Corrêa · Todos os direitos reservados
     </div>
   </div>
-</div> SENHA (admin) -->
+</div>
+</div>
+
+<!-- MODAL EDITAR USUÁRIO (admin) -->
+<div class="modal-overlay" id="edit-user-overlay" onclick="closeModal('edit-user-overlay')">
+  <div class="modal-box" onclick="event.stopPropagation()" style="max-width:400px">
+    <div class="modal-header">
+      <div class="modal-title">Editar usuário</div>
+      <button class="modal-close" onclick="closeModal('edit-user-overlay')">×</button>
+    </div>
+    <div id="edit-user-err" class="login-err err-red"></div>
+    <div id="edit-user-ok" class="login-err err-green"></div>
+    <div class="form-row" style="grid-template-columns:1fr">
+      <div class="fg"><label>Nome exibido</label><input type="text" id="edit-user-name"></div>
+      <div class="fg"><label>Login</label><input type="text" id="edit-user-login" readonly style="background:var(--surface2);color:var(--text3)"></div>
+      <div class="fg"><label>Perfil</label>
+        <select id="edit-user-role">
+          <option value="user">Funcionário</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <div class="fg"><label>Cor do card</label>
+        <select id="edit-user-color">
+          <option value="">— padrão —</option>
+          <option value="purple">Roxo</option>
+          <option value="blue">Azul</option>
+          <option value="green">Verde</option>
+          <option value="amber">Âmbar</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px">
+      <button class="btn" onclick="closeModal('edit-user-overlay')">Cancelar</button>
+      <button class="btn btn-p" onclick="saveEditUser()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL REDEFINIR SENHA (admin) -->
 <div class="modal-overlay" id="reset-pass-overlay" onclick="closeModal('reset-pass-overlay')">
   <div class="modal-box" onclick="event.stopPropagation()" style="max-width:400px">
     <div class="modal-header">
@@ -1198,6 +1236,7 @@ function renderAdmin(){
         <button onclick="togglePassView(${i},'${senhaLegivel.replace(/'/g,"\\'")}',this)" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--blue);font-family:Arial,sans-serif">ver</button>
       </div>
       <button class="btn btn-sm" onclick="openResetPass(${i})">🔒 Redefinir</button>
+      <button class="btn btn-sm" onclick="openEditUser(${i})">✏️ Editar</button>
       ${u.username!=='junior'?`<button class="btn btn-sm" onclick="toggleUserActive(${i})">${u.active?'Desativar':'Ativar'}</button><button class="del-btn" onclick="removeUser(${i})">×</button>`:''}
     </div>`;
   }).join('');
@@ -1247,8 +1286,37 @@ async function saveResetPass(){
   renderAdmin();
 }
 
-// ══════════════════════════════════════════════════════
-// MINHA CONTA
+// ── EDITAR USUÁRIO (admin) ────────────────────────────
+let editUserIndex=null;
+function openEditUser(i){
+  editUserIndex=i;
+  const u=users[i];
+  document.getElementById('edit-user-name').value=u.name;
+  document.getElementById('edit-user-login').value=u.username;
+  document.getElementById('edit-user-role').value=u.role||'user';
+  document.getElementById('edit-user-color').value=u.color||'';
+  document.getElementById('edit-user-err').style.display='none';
+  document.getElementById('edit-user-ok').style.display='none';
+  document.getElementById('edit-user-overlay').classList.add('open');
+}
+async function saveEditUser(){
+  if(editUserIndex===null)return;
+  const name=document.getElementById('edit-user-name').value.trim();
+  const role=document.getElementById('edit-user-role').value;
+  const color=document.getElementById('edit-user-color').value;
+  const err=document.getElementById('edit-user-err');const ok=document.getElementById('edit-user-ok');
+  err.style.display='none';ok.style.display='none';
+  if(!name){err.style.display='block';err.textContent='Nome não pode ser vazio.';return;}
+  users[editUserIndex].name=name;
+  users[editUserIndex].role=role;
+  users[editUserIndex].color=color;
+  // atualiza sessões existentes com o nome antigo para o novo nome
+  const oldName=users[editUserIndex].name;
+  await saveUsersOnly();
+  ok.style.display='block';ok.textContent='✓ Usuário atualizado!';
+  setTimeout(()=>closeModal('edit-user-overlay'),1200);
+  renderAdmin();
+}
 // ══════════════════════════════════════════════════════
 function renderConta(){
   if(!currentUser)return;
