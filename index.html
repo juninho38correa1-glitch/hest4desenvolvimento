@@ -168,10 +168,13 @@ tr:hover td{background:var(--surface2)}
         </select>
       </div>
     </div>
-    <div class="form-row" style="grid-template-columns:1fr 1fr">
-      <div class="fg"><label>Horas</label><input type="number" id="edit-hours" min="0.5" max="12" step="0.5"></div>
-      <div class="fg"><label>Produtos</label><input type="text" id="edit-prods-display" style="background:var(--surface2);color:var(--text2);font-size:11px" readonly></div>
+    <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
+      <div class="fg"><label>Início</label><input type="time" id="edit-start" oninput="calcEditHours()"></div>
+      <div class="fg"><label>Fim</label><input type="time" id="edit-end" oninput="calcEditHours()"></div>
+      <div class="fg"><label>Total calculado</label><input type="text" id="edit-hours-display" readonly style="background:var(--surface2);font-weight:600;color:var(--green)"></div>
     </div>
+    <input type="hidden" id="edit-hours">
+    <div class="fg" style="margin-bottom:10px"><label>Produtos</label><input type="text" id="edit-prods-display" style="background:var(--surface2);color:var(--text2);font-size:11px" readonly></div>
     <div class="fg" style="margin-bottom:1.25rem"><label>Observação</label><input type="text" id="edit-desc" placeholder="Observação..."></div>
     <div style="display:flex;justify-content:flex-end;gap:8px">
       <button class="btn" onclick="closeModal('edit-overlay')">Cancelar</button>
@@ -268,13 +271,16 @@ tr:hover td{background:var(--surface2)}
   <div class="sec" id="sec-sessao">
     <div class="card">
       <div class="card-ttl">Nova sessão de horas extras</div>
-      <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
+      <div class="form-row" style="grid-template-columns:1fr 1fr 1fr 1fr">
         <div class="fg"><label>Data</label><input type="date" id="s-date"></div>
         <div class="fg"><label>Responsável</label>
           <select id="s-person"><option>Junior</option><option>Pablo</option><option>Lucas</option><option>Erika</option></select>
         </div>
-        <div class="fg"><label>Horas trabalhadas</label><input type="number" id="s-hours" min="0.5" max="12" step="0.5" placeholder="2.5"></div>
+        <div class="fg"><label>Início</label><input type="time" id="s-start" oninput="calcHours()"></div>
+        <div class="fg"><label>Fim</label><input type="time" id="s-end" oninput="calcHours()"></div>
       </div>
+      <!-- preview do total calculado -->
+      <div id="hours-preview" style="display:none;background:var(--green-bg);border-radius:var(--radius-sm);padding:8px 12px;font-size:13px;font-family:Arial,sans-serif;color:var(--green);margin-bottom:10px;font-weight:600"></div>
       <div class="fg" style="margin-bottom:10px"><label>Observação da sessão</label><input type="text" id="s-desc" placeholder="Descreva o que foi feito nessa sessão..."></div>
       <div style="margin-bottom:10px">
         <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-family:Arial,sans-serif;margin-bottom:6px">Produtos trabalhados</div>
@@ -482,7 +488,36 @@ let obs      = JSON.parse(localStorage.getItem('s04v6_obs')     ||'{}');
   }
 })();
 
-// FIX #4: token nunca fica em localStorage — apenas em memória
+// ─── FORMATAÇÃO DE HORAS ──────────────────────────────
+// Converte decimal para string legível: 1.8 → "1h48" / 7.6 → "7h36"
+function fmtHours(h){
+  const total=Math.round(h*60);
+  const hh=Math.floor(total/60);
+  const mm=total%60;
+  return mm===0?`${hh}h`:`${hh}h${String(mm).padStart(2,'0')}`;
+}
+
+// Corrige sessões antigas que usavam 1.48 em vez de 1.8 (1h48min)
+(function fixLegacyHours(){
+  let fixed=false;
+  sessions=sessions.map(s=>{
+    // detecta valores como 1.48, 2.48, etc. (minutos escritos como decimais)
+    const dec=s.hours%1;
+    if(dec>0.59){
+      const hh=Math.floor(s.hours);
+      const mm=Math.round(dec*100);
+      const corrected=hh+(mm/60);
+      console.log(`Corrigindo horas: ${s.hours} → ${corrected.toFixed(4)} (${fmtHours(corrected)})`);
+      fixed=true;
+      return{...s,hours:Math.round(corrected*1000)/1000};
+    }
+    return s;
+  });
+  if(fixed){
+    localStorage.setItem('s04v6_sessions',JSON.stringify(sessions));
+    console.log('✅ Horas legadas corrigidas.');
+  }
+})();
 let accessToken=null;
 let tokenExpiry=0;
 let driveFileId=null;
@@ -732,7 +767,7 @@ function sw(t){
 // ─── MÉTRICAS ─────────────────────────────────────────
 function renderMetrics(){
   const h=sessions.reduce((s,x)=>s+x.hours,0);
-  document.getElementById('m-h').textContent=h.toFixed(1)+'h';
+  document.getElementById('m-h').textContent=fmtHours(h);
   document.getElementById('m-s').textContent=sessions.length;
   document.getElementById('m-t').textContent=overallPct()+'%';
   document.getElementById('m-p').textContent=completedProds()+'/'+TOTAL_PRODS;
@@ -750,7 +785,7 @@ function renderVisao(){
         <div class="avatar" style="background:${p.bg};color:${p.tc}">${ini}</div>
         <div style="flex:1">
           <div class="pname">${p.name}</div>
-          <div class="prole">${st.sessions} sessões · ${st.hours.toFixed(1)}h · ${st.prodsCount} produto(s)</div>
+          <div class="prole">${st.sessions} sessões · ${fmtHours(st.hours)} · ${st.prodsCount} produto(s)</div>
         </div>
         <div style="font-size:22px;color:${bc}">${st.pct}%</div>
       </div>
@@ -869,6 +904,30 @@ function saveObs(){
 let selectedProds=new Set();
 document.getElementById('s-date').value=new Date().toISOString().slice(0,10);
 
+function calcHours(){
+  const start=document.getElementById('s-start').value;
+  const end=document.getElementById('s-end').value;
+  const preview=document.getElementById('hours-preview');
+  if(!start||!end){preview.style.display='none';return;}
+  const [sh,sm]=start.split(':').map(Number);
+  const [eh,em]=end.split(':').map(Number);
+  let totalMin=(eh*60+em)-(sh*60+sm);
+  if(totalMin<=0){
+    preview.style.display='block';
+    preview.style.background='var(--red-bg)';
+    preview.style.color='var(--red)';
+    preview.textContent='⚠️ Horário de fim deve ser depois do início';
+    return;
+  }
+  preview.style.display='block';
+  preview.style.background='var(--green-bg)';
+  preview.style.color='var(--green)';
+  const hh=Math.floor(totalMin/60);
+  const mm=totalMin%60;
+  const label=mm===0?`${hh}h`:`${hh}h${String(mm).padStart(2,'0')}`;
+  preview.textContent=`⏱ Duração calculada: ${start} → ${end} = ${label}`;
+}
+
 function renderProdList(){
   const search=(document.getElementById('prod-search')||{value:''}).value.toLowerCase();
   const visible=PRODUCTS.filter(p=>!search||p.toLowerCase().includes(search));
@@ -946,29 +1005,34 @@ function toggleTask(prod,task,val){
 async function addSession(){
   const date=document.getElementById('s-date').value;
   const person=document.getElementById('s-person').value;
-  const hours=parseFloat(document.getElementById('s-hours').value);
+  const start=document.getElementById('s-start').value;
+  const end=document.getElementById('s-end').value;
   const desc=document.getElementById('s-desc').value.trim();
-  if(!date||!hours||!selectedProds.size){alert('Preencha data, horas e selecione ao menos um produto.');return;}
+  if(!date||!start||!end||!selectedProds.size){
+    alert('Preencha data, horário de início, fim e selecione ao menos um produto.');return;
+  }
+  const [sh,sm]=start.split(':').map(Number);
+  const [eh,em]=end.split(':').map(Number);
+  const totalMin=(eh*60+em)-(sh*60+sm);
+  if(totalMin<=0){alert('Horário de fim deve ser depois do início.');return;}
+  const hours=Math.round((totalMin/60)*1000)/1000;
+
   const prods=[...selectedProds];
-  const prodsSummary=prods.map(prod=>({
-    name:prod,
-    tasksDone:TASKS.filter(t=>isOk(prod,t))
-  }));
-  sessions.push({date,person,hours,desc,prods,prodsSummary,ts:Date.now()});
+  const prodsSummary=prods.map(prod=>({name:prod,tasksDone:TASKS.filter(t=>isOk(prod,t))}));
+  sessions.push({date,person,hours,start,end,desc,prods,prodsSummary,ts:Date.now()});
   sessions.sort((a,b)=>a.date.localeCompare(b.date));
 
-  // feedback imediato
   const n=prods.length;
   document.getElementById('task-checks').innerHTML=`<div style="font-size:13px;color:var(--text3);font-family:Arial,sans-serif">⏳ Salvando sessão...</div>`;
-  document.getElementById('s-hours').value='';
+  document.getElementById('s-start').value='';
+  document.getElementById('s-end').value='';
   document.getElementById('s-desc').value='';
+  document.getElementById('hours-preview').style.display='none';
   selectedProds.clear();
   renderProdList();renderChips();renderMetrics();
 
-  // salva imediatamente — crítico
   await saveAllNow();
-
-  document.getElementById('task-checks').innerHTML=`<div style="font-size:13px;color:var(--green);font-family:Arial,sans-serif">✓ Sessão salva com sucesso — ${n} produto(s) em ${hours}h!</div>`;
+  document.getElementById('task-checks').innerHTML=`<div style="font-size:13px;color:var(--green);font-family:Arial,sans-serif">✓ Sessão salva — ${start} às ${end} (${fmtHours(hours)}) · ${n} produto(s)</div>`;
 }
 
 // ─── HISTÓRICO (FIX índice) ───────────────────────────
@@ -986,10 +1050,11 @@ function renderHistory(){
     const p=PEOPLE.find(x=>x.name===s.person)||{bg:'#eee',tc:'#444'};
     const prodsArr=s.prods||(s.prod?[s.prod]:[]);
     const prodsLabel=prodsArr.length===1?prodsArr[0]:`${prodsArr.length} produtos`;
+    const timeLabel=s.start&&s.end?`${s.start}–${s.end} `:'';
     return`<tr style="cursor:pointer" onclick="openDetailModal(${ri})">
       <td style="width:85px;white-space:nowrap">${d}</td>
       <td style="width:115px"><span class="pill" style="background:${p.bg};color:${p.tc}">${s.person}</span></td>
-      <td style="width:48px">${s.hours}h</td>
+      <td style="width:80px;font-family:Arial,sans-serif;font-size:11px;color:var(--text2)">${timeLabel}<span style="font-weight:600;color:var(--text)">${fmtHours(s.hours)}</span></td>
       <td style="font-weight:600;font-size:12px;color:var(--blue)">${prodsLabel}</td>
       <td style="font-size:11px;color:var(--text2)">${s.desc||'—'}</td>
       <td style="width:56px;white-space:nowrap" onclick="event.stopPropagation()">
@@ -1009,8 +1074,10 @@ function openDetailModal(i){
   const s=sessions[i];
   const d=new Date(s.date+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
   const p=PEOPLE.find(x=>x.name===s.person)||{bg:'#eee',tc:'#444'};
+  const timeInfo=s.start&&s.end
+    ?`<span style="font-size:12px;color:var(--text2);font-family:Arial,sans-serif;margin-left:8px">🕐 ${s.start} → ${s.end}</span>`:'';
   document.getElementById('detail-title').innerHTML=
-    `<span class="pill" style="background:${p.bg};color:${p.tc};margin-right:8px">${s.person}</span>${d} · ${s.hours}h`;
+    `<span class="pill" style="background:${p.bg};color:${p.tc};margin-right:8px">${s.person}</span>${d} · ${fmtHours(s.hours)}${timeInfo}`;
 
   // FIX #2: suporte completo ao novo formato prods/prodsSummary
   const prodsSummary=s.prodsSummary||(s.prod?[{name:s.prod,tasksDone:s.tasksDone||[]}]:[]);
@@ -1038,6 +1105,19 @@ function openDetailModal(i){
   document.getElementById('detail-overlay').classList.add('open');
 }
 
+function calcEditHours(){
+  const start=document.getElementById('edit-start').value;
+  const end=document.getElementById('edit-end').value;
+  if(!start||!end)return;
+  const [sh,sm]=start.split(':').map(Number);
+  const [eh,em]=end.split(':').map(Number);
+  const totalMin=(eh*60+em)-(sh*60+sm);
+  if(totalMin<=0){document.getElementById('edit-hours-display').value='⚠️ inválido';return;}
+  const hours=Math.round((totalMin/60)*1000)/1000;
+  document.getElementById('edit-hours').value=hours;
+  document.getElementById('edit-hours-display').value=fmtHours(hours);
+}
+
 let editIndex=null;
 function openEditModal(i){
   editIndex=i;
@@ -1045,7 +1125,10 @@ function openEditModal(i){
   const prodsArr=s.prods||(s.prod?[s.prod]:[]);
   document.getElementById('edit-date').value=s.date;
   document.getElementById('edit-person').value=s.person;
+  document.getElementById('edit-start').value=s.start||'';
+  document.getElementById('edit-end').value=s.end||'';
   document.getElementById('edit-hours').value=s.hours;
+  document.getElementById('edit-hours-display').value=s.start&&s.end?fmtHours(s.hours):'(manual: '+fmtHours(s.hours)+')';
   document.getElementById('edit-prods-display').value=prodsArr.join(', ');
   document.getElementById('edit-desc').value=s.desc||'';
   document.getElementById('edit-overlay').classList.add('open');
@@ -1055,10 +1138,18 @@ async function saveEditSession(){
   if(editIndex===null)return;
   const date=document.getElementById('edit-date').value;
   const person=document.getElementById('edit-person').value;
-  const hours=parseFloat(document.getElementById('edit-hours').value);
+  const start=document.getElementById('edit-start').value;
+  const end=document.getElementById('edit-end').value;
   const desc=document.getElementById('edit-desc').value.trim();
-  if(!date||!hours){alert('Preencha data e horas.');return;}
-  sessions[editIndex]={...sessions[editIndex],date,person,hours,desc};
+  let hours=parseFloat(document.getElementById('edit-hours').value);
+  if(start&&end){
+    const [sh,sm]=start.split(':').map(Number);
+    const [eh,em]=end.split(':').map(Number);
+    const totalMin=(eh*60+em)-(sh*60+sm);
+    if(totalMin>0) hours=Math.round((totalMin/60)*1000)/1000;
+  }
+  if(!date||!hours){alert('Preencha data e horários.');return;}
+  sessions[editIndex]={...sessions[editIndex],date,person,hours,start,end,desc};
   sessions.sort((a,b)=>a.date.localeCompare(b.date));
   await saveAllNow();
   renderMetrics();renderHistory();renderChart();
@@ -1106,7 +1197,7 @@ function renderReport(){
   txt+=`PROGRESSO POR RESPONSÁVEL\n`;
   PEOPLE.forEach(p=>{
     const st=personStats(p.name);
-    txt+=`• ${p.name}: ${st.pct}% — ${st.done}/${st.total} tarefas | ${st.hours.toFixed(1)}h extras | ${st.prodsCount} produto(s)\n`;
+    txt+=`• ${p.name}: ${st.pct}% — ${st.done}/${st.total} tarefas | ${fmtHours(st.hours)} extras | ${st.prodsCount} produto(s)\n`;
   });
   txt+=`\nPROGRESSO POR TAREFA\n`;
   TASKS.forEach(t=>{const d=taskTotal(t);txt+=`• ${t}: ${d}/${TOTAL_PRODS} (${Math.round(d/TOTAL_PRODS*100)}%)\n`;});
@@ -1120,7 +1211,7 @@ function renderReport(){
     sessions.forEach(s=>{
       const d=new Date(s.date+'T12:00:00').toLocaleDateString('pt-BR');
       const prodsArr=s.prods||(s.prod?[s.prod]:[]);
-      txt+=`• ${d} — ${s.person} (${s.hours}h) | ${prodsArr.join(', ')}${s.desc?' | '+s.desc:''}\n`;
+      txt+=`• ${d} — ${s.person} (${fmtHours(s.hours)}) | ${prodsArr.join(', ')}${s.desc?' | '+s.desc:''}\n`;
     });
   }
   txt+=`\n${'─'.repeat(54)}\nGerado automaticamente — Studyo4`;
@@ -1163,7 +1254,7 @@ function renderCollabContent(){
   const bc=barColor(st.pct);
 
   let html=`<div style="display:flex;gap:12px;margin-bottom:1rem;flex-wrap:wrap">
-    <div class="mc" style="flex:1;min-width:110px"><div class="mc-lbl">Horas extras</div><div class="mc-val">${st.hours.toFixed(1)}h</div></div>
+    <div class="mc" style="flex:1;min-width:110px"><div class="mc-lbl">Horas extras</div><div class="mc-val">${fmtHours(st.hours)}</div></div>
     <div class="mc" style="flex:1;min-width:110px"><div class="mc-lbl">Sessões</div><div class="mc-val">${st.sessions}</div></div>
     <div class="mc" style="flex:1;min-width:110px"><div class="mc-lbl">Produtos</div><div class="mc-val">${st.prodsCount}</div></div>
     <div class="mc" style="flex:1;min-width:110px"><div class="mc-lbl">Progresso</div><div class="mc-val" style="color:${bc}">${st.pct}%</div><div class="mc-sub">${st.done}/${st.total} tarefas OK</div></div>
@@ -1177,7 +1268,7 @@ function renderCollabContent(){
     const d=new Date(date+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});
     const daySessions=byDate[date];
     const dayH=daySessions.reduce((a,s)=>a+s.hours,0);
-    html+=`<div class="collab-day"><div class="collab-day-title">${d} <span>${dayH}h</span></div>`;
+    html+=`<div class="collab-day"><div class="collab-day-title">${d} <span>${fmtHours(dayH)}</span></div>`;
 
     daySessions.forEach(s=>{
       // FIX #2: usa novo formato prodsSummary
