@@ -754,6 +754,9 @@ function doRegister(){
 
 function loginSuccess(user){
   currentUser=user;
+  // salva sessão ativa — persiste no F5, some ao fechar o navegador
+  sessionStorage.setItem('s04_session', JSON.stringify({username:user.username}));
+
   const pcfg2=userCfg(user.name);
   document.getElementById('top-avatar').style.cssText=`background:${pcfg2.bg};color:${pcfg2.tc}`;
   document.getElementById('top-avatar').textContent=user.name.slice(0,2).toUpperCase();
@@ -775,13 +778,16 @@ function loginSuccess(user){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('register-screen').style.display='none';
   document.getElementById('app').style.display='block';
-  // recarrega dados frescos do Supabase a cada login
+  // sempre começa na visão geral
+  sw('visao');
+  // recarrega dados frescos do Supabase
   showLoading('Carregando dados...');
   loadAllFromSupabase().then(()=>{hideLoading();renderAll();}).catch(()=>{hideLoading();renderAll();});
 }
 
 function doLogout(){
   currentUser=null;
+  sessionStorage.removeItem('s04_session'); // limpa sessão ao sair
   showLogin();
 }
 
@@ -1499,12 +1505,33 @@ window.addEventListener('load', async ()=>{
     await loadAllFromSupabase();
     document.getElementById('db-status').textContent='● Banco conectado';
     document.getElementById('db-status').className='db-status ok';
+
+    // tenta restaurar sessão ativa (persiste no F5)
+    const saved = sessionStorage.getItem('s04_session');
+    if(saved){
+      try{
+        const {username} = JSON.parse(saved);
+        const user = users.find(u=>u.username===username&&u.active);
+        if(user){
+          loginSuccess(user);
+          return; // já logou, não mostra tela de login
+        }
+      }catch(e){ sessionStorage.removeItem('s04_session'); }
+    }
     showLogin();
   }catch(e){
     console.error('Supabase connection error:', e);
     document.getElementById('db-status').textContent='⚠️ Sem conexão com o banco';
     document.getElementById('db-status').className='db-status err';
-    // fallback: abre login mesmo assim com dados locais
+    // mesmo sem banco, tenta restaurar sessão pelo usuário local
+    const saved = sessionStorage.getItem('s04_session');
+    if(saved){
+      try{
+        const {username} = JSON.parse(saved);
+        const user = users.find(u=>u.username===username&&u.active);
+        if(user){loginSuccess(user);return;}
+      }catch(e2){}
+    }
     showLogin();
   }
 });
