@@ -216,8 +216,8 @@ tr:hover td{background:var(--surface2)}
   </div>
 
   <div class="metrics">
-    <div class="mc"><div class="mc-lbl">Total de horas</div><div class="mc-val" id="m-h">0h</div><div class="mc-sub">em horas extras</div></div>
-    <div class="mc"><div class="mc-lbl">Sessões realizadas</div><div class="mc-val" id="m-s">0</div><div class="mc-sub">dias trabalhados</div></div>
+    <div class="mc"><div class="mc-lbl" id="m-h-lbl">Total de horas</div><div class="mc-val" id="m-h">0h</div><div class="mc-sub" id="m-h-sub">em horas extras</div></div>
+    <div class="mc"><div class="mc-lbl" id="m-s-lbl">Sessões realizadas</div><div class="mc-val" id="m-s">0</div><div class="mc-sub" id="m-s-sub">dias trabalhados</div></div>
     <div class="mc"><div class="mc-lbl">Progresso geral</div><div class="mc-val" id="m-t">0%</div><div class="mc-sub">de todas as tarefas</div></div>
     <div class="mc"><div class="mc-lbl">Produtos 100%</div><div class="mc-val" id="m-p">0/0</div><div class="mc-sub">totalmente concluídos</div></div>
   </div>
@@ -757,20 +757,36 @@ function sw(t){
   document.querySelectorAll('.sec').forEach(el=>el.classList.remove('on'));
   document.getElementById('sec-'+t).classList.add('on');
   if(t==='visao')renderVisao();
-  if(t==='tabela')renderTable();
-  if(t==='sessao'){renderProdList();renderChips();renderTaskChecks();}
+  if(t==='tabela'){renderTable();renderMetrics();}
+  if(t==='sessao'){renderProdList();renderChips();renderTaskChecks();renderMetrics();}
   if(t==='historico'){renderHistory();renderChart();}
-  if(t==='relatorio')renderReport();
-  if(t==='colaborador'){activeCollab=activeCollab||'Junior';renderCollabTabs();}
+  if(t==='relatorio'){renderReport();renderMetrics();}
+  if(t==='colaborador'){activeCollab=activeCollab||'Junior';renderCollabTabs();renderMetrics();}
 }
 
 // ─── MÉTRICAS ─────────────────────────────────────────
-function renderMetrics(){
-  const h=sessions.reduce((s,x)=>s+x.hours,0);
-  document.getElementById('m-h').textContent=fmtHours(h);
-  document.getElementById('m-s').textContent=sessions.length;
-  document.getElementById('m-t').textContent=overallPct()+'%';
-  document.getElementById('m-p').textContent=completedProds()+'/'+TOTAL_PRODS;
+function renderMetrics(fp){
+  // fp = filtro de pessoa (opcional, vem do histórico)
+  const filtered = fp ? sessions.filter(s=>s.person===fp) : sessions;
+  const h = filtered.reduce((s,x)=>s+x.hours, 0);
+  document.getElementById('m-h').textContent = fmtHours(h);
+  document.getElementById('m-s').textContent = filtered.length;
+  document.getElementById('m-t').textContent = overallPct()+'%';
+  document.getElementById('m-p').textContent = completedProds()+'/'+TOTAL_PRODS;
+
+  if(fp){
+    const p = PEOPLE.find(x=>x.name===fp);
+    const color = p?p.tc:'var(--text)';
+    document.getElementById('m-h-lbl').innerHTML = `Horas de <span style="color:${color};font-weight:700">${fp}</span>`;
+    document.getElementById('m-h-sub').textContent = 'neste filtro';
+    document.getElementById('m-s-lbl').innerHTML = `Sessões de <span style="color:${color};font-weight:700">${fp}</span>`;
+    document.getElementById('m-s-sub').textContent = `${filtered.length===1?'sessão':'sessões'} registradas`;
+  } else {
+    document.getElementById('m-h-lbl').textContent = 'Total de horas';
+    document.getElementById('m-h-sub').textContent = 'em horas extras';
+    document.getElementById('m-s-lbl').textContent = 'Sessões realizadas';
+    document.getElementById('m-s-sub').textContent = 'dias trabalhados';
+  }
 }
 
 // ─── VISÃO GERAL (FIX #1) ─────────────────────────────
@@ -1038,6 +1054,7 @@ async function addSession(){
 // ─── HISTÓRICO (FIX índice) ───────────────────────────
 function renderHistory(){
   const fp=document.getElementById('h-filter').value;
+  renderMetrics(fp||null); // atualiza métricas com filtro
   const el=document.getElementById('hist-tbl');
   if(!sessions.length){el.innerHTML='<div class="empty">Nenhuma sessão registrada.</div>';return;}
   let indices=sessions.map((_,i)=>i);
