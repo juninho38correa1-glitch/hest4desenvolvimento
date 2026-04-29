@@ -544,13 +544,19 @@ async function saveSessionsOnly(){
 }
 
 async function saveChecksOnly(){
-  try{ await sbSet('checks', checks); await sbSet('taskDates', taskDates); setSyncing('ok'); }
-  catch(e){ setSyncing('err'); }
+  try{
+    await sbSet('checks', checks);
+    await sbSet('taskDates', taskDates);
+    setSyncing('ok');
+  }catch(e){setSyncing('err');}
 }
 
 async function saveUsersOnly(){
-  try{ await sbSet('users', users); await sbSet('pendingUsers', pendingUsers); setSyncing('ok'); }
-  catch(e){ setSyncing('err'); }
+  try{
+    await sbSet('users', users);
+    await sbSet('pendingUsers', pendingUsers);
+    setSyncing('ok');
+  }catch(e){setSyncing('err');}
 }
 
 async function saveObsOnly(){
@@ -670,6 +676,22 @@ let editIndex       = null;
 const isAdmin = () => currentUser?.role === 'admin';
 const esc     = s => s.replace(/'/g, "\\'");
 
+// Retorna lista dinâmica de usuários ativos (não hardcoded)
+function activeUsers(){
+  return users.filter(u=>u.active);
+}
+
+// Cores dinâmicas: usa PEOPLE_CFG se o nome bater, senão usa color do user
+function userCfg(nameOrUser){
+  const name = typeof nameOrUser==='string' ? nameOrUser : nameOrUser.name;
+  const fromCfg = PEOPLE_CFG.find(x=>x.name===name);
+  if(fromCfg) return fromCfg;
+  const u = users.find(x=>x.name===name);
+  const colorMap={purple:{bg:'#ede7f6',tc:'#4a2a7a'},blue:{bg:'#d6eaf8',tc:'#1a5276'},green:{bg:'#d8f3dc',tc:'#2d6a4f'},amber:{bg:'#fef3cd',tc:'#7d5a00'}};
+  const c = u?.color ? colorMap[u.color] : null;
+  return c || {bg:'#f0efe9',tc:'#6b6860',color:'#6b6860'};
+}
+
 // ══════════════════════════════════════════════════════
 // FORMATAÇÃO
 // ══════════════════════════════════════════════════════
@@ -732,8 +754,8 @@ function doRegister(){
 
 function loginSuccess(user){
   currentUser=user;
-  const p=PEOPLE_CFG.find(x=>x.name===user.name)||{bg:'#eee',tc:'#444'};
-  document.getElementById('top-avatar').style.cssText=`background:${p.bg};color:${p.tc}`;
+  const pcfg2=userCfg(user.name);
+  document.getElementById('top-avatar').style.cssText=`background:${pcfg2.bg};color:${pcfg2.tc}`;
   document.getElementById('top-avatar').textContent=user.name.slice(0,2).toUpperCase();
   document.getElementById('top-name').textContent=user.name;
   document.getElementById('top-admin-badge').style.display=isAdmin()?'inline-block':'none';
@@ -743,7 +765,7 @@ function loginSuccess(user){
   const hFilter=document.getElementById('h-filter');
   hFilter.innerHTML='<option value="">Todas</option>';
   if(isAdmin()){
-    PEOPLE_CFG.forEach(p=>{const o=document.createElement('option');o.value=p.name;o.textContent=p.name;hFilter.appendChild(o);});
+    activeUsers().forEach(u=>{const o=document.createElement('option');o.value=u.name;o.textContent=u.name;hFilter.appendChild(o);});
     document.getElementById('hist-filter-row').style.display='';
   }else{
     document.getElementById('hist-filter-row').style.display='none';
@@ -820,7 +842,7 @@ function sessionPersonName(s){
 // resolve config de cor de uma sessão
 function sessionPersonCfg(s){
   const name=sessionPersonName(s);
-  return PEOPLE_CFG.find(x=>x.name===name)||{bg:'#f0efe9',tc:'#6b6860'};
+  return userCfg(name);
 }
 
 // ══════════════════════════════════════════════════════
@@ -838,7 +860,7 @@ function sw(t){
   if(t==='sessao'){renderProdList();renderChips();renderTaskChecks();renderMetrics();}
   if(t==='historico'){renderHistory();renderChart();}
   if(t==='relatorio'){renderReport();renderMetrics();}
-  if(t==='colaborador'){activeCollab=activeCollab||PEOPLE_CFG[0]?.name;renderCollabTabs();renderMetrics();}
+  if(t==='colaborador'){activeCollab=activeCollab||(activeUsers()[0]?.name);renderCollabTabs();renderMetrics();}
   if(t==='admin')renderAdmin();
   if(t==='conta')renderConta();
 }
@@ -855,7 +877,7 @@ function renderMetrics(fp){
   document.getElementById('m-t').textContent=overallPct()+'%';
   document.getElementById('m-p').textContent=completedProds()+'/'+TOTAL_PRODS;
   if(fp){
-    const p=PEOPLE_CFG.find(x=>x.name===fp);const color=p?p.tc:'var(--text)';
+    const pcfg=userCfg(fp);const color=pcfg?pcfg.tc:'var(--text)';
     document.getElementById('m-h-lbl').innerHTML=`Horas de <span style="color:${color};font-weight:700">${fp}</span>`;
     document.getElementById('m-h-sub').textContent='neste filtro';
     document.getElementById('m-s-lbl').innerHTML=`Sessões de <span style="color:${color};font-weight:700">${fp}</span>`;
@@ -873,13 +895,15 @@ function renderMetrics(fp){
 // ══════════════════════════════════════════════════════
 function renderVisao(){
   renderMetrics();
-  const peopleToShow=isAdmin()?PEOPLE_CFG:[PEOPLE_CFG.find(p=>p.name===currentUser?.name)||PEOPLE_CFG[0]];
-  document.getElementById('person-cards').innerHTML=peopleToShow.map(p=>{
-    const st=personStats(p.name);const bc=barColor(st.pct);const ini=p.name.slice(0,2).toUpperCase();
+  const peopleToShow=isAdmin()?activeUsers():[users.find(u=>u.username===currentUser?.username)||{name:currentUser?.name,bg:'#eee',tc:'#444'}];
+  document.getElementById('person-cards').innerHTML=peopleToShow.map(u=>{
+    const st=personStats(u.name);const bc=barColor(st.pct);
+    const cfg=userCfg(u.name);
+    const ini=u.name.slice(0,2).toUpperCase();
     return`<div class="person-card">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
-        <div class="avatar" style="background:${p.bg};color:${p.tc}">${ini}</div>
-        <div style="flex:1"><div class="pname">${p.name}</div><div class="prole">${st.sessions} sessões · ${fmtHours(st.hours)} · ${st.prodsCount} produto(s)</div></div>
+        <div class="avatar" style="background:${cfg.bg};color:${cfg.tc}">${ini}</div>
+        <div style="flex:1"><div class="pname">${u.name}</div><div class="prole">${st.sessions} sessões · ${fmtHours(st.hours)} · ${st.prodsCount} produto(s)</div></div>
         <div style="font-size:22px;color:${bc}">${st.pct}%</div>
       </div>
       <div class="pbar"><div class="pfill" style="width:${st.pct}%;background:${bc}"></div></div>
@@ -1083,14 +1107,14 @@ function renderHistory(){
     const s=sessions[ri];if(!s)return'';
     const d=new Date(s.date+'T12:00:00').toLocaleDateString('pt-BR');
     const nomePessoa=sessionPersonName(s);
-    const p=sessionPersonCfg(s);
+    const pcfg3=sessionPersonCfg(s);
     const prodsArr=s.prods||(s.prod?[s.prod]:[]);
     const prodsLabel=prodsArr.length===1?prodsArr[0]:`${prodsArr.length} produtos`;
     const timeLabel=s.start&&s.end?`${s.start}–${s.end} `:'';
     const canEdit=isAdmin()||s.person===currentUser?.name;
     return`<tr style="cursor:pointer" onclick="openDetailModal(${ri})">
       <td style="width:85px;white-space:nowrap">${d}</td>
-      <td style="width:110px"><span class="pill" style="background:${p.bg};color:${p.tc}">${nomePessoa}</span></td>
+      <td style="width:110px"><span class="pill" style="background:${pcfg3.bg};color:${pcfg3.tc}">${nomePessoa}</span></td>
       <td style="width:90px;font-family:Arial,sans-serif;font-size:11px;color:var(--text2)">${timeLabel}<span style="font-weight:600;color:var(--text)">${fmtHours(s.hours)}</span></td>
       <td style="font-weight:600;font-size:12px;color:var(--blue)">${prodsLabel}</td>
       <td style="font-size:11px;color:var(--text2)">${s.desc||'—'}</td>
@@ -1107,7 +1131,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function openDetailModal(i){
   const s=sessions[i];if(!s)return;
   const d=new Date(s.date+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
-  const p=PEOPLE_CFG.find(x=>x.name===s.person)||{bg:'#eee',tc:'#444'};
+  const p=userCfg(s.person);
   const timeInfo=s.start&&s.end?`<span style="font-size:12px;color:var(--text2);font-family:Arial,sans-serif;margin-left:8px">🕐 ${s.start}→${s.end}</span>`:'';
   document.getElementById('detail-title').innerHTML=`<span class="pill" style="background:${p.bg};color:${p.tc};margin-right:8px">${s.person}</span>${d} · ${fmtHours(s.hours)}${timeInfo}`;
   const ps=s.prodsSummary||(s.prod?[{name:s.prod,tasksDone:s.tasksDone||[]}]:[]);
@@ -1202,8 +1226,13 @@ function renderChart(){
   }else{
     const colors={Junior:'#7c5cbf',Pablo:'#2980b9',Lucas:'#27ae60',Erika:'#e67e22'};
     const dates=[...new Set(base.map(s=>s.date))].sort();
-    const peopleInView=isAdmin()?PEOPLE_CFG:[PEOPLE_CFG.find(p=>p.name===currentUser?.name)||PEOPLE_CFG[0]];
-    const datasets=peopleInView.map(p=>({label:p.name,data:dates.map(d=>base.filter(s=>s.date===d&&s.person===p.name).reduce((a,s)=>a+s.hours,0)),backgroundColor:colors[p.name]||p.color,borderRadius:3}));
+    const peopleInView=isAdmin()?activeUsers():[users.find(u=>u.username===currentUser?.username)||{name:currentUser?.name,username:currentUser?.username}];
+    const palette2=['#7c5cbf','#2980b9','#27ae60','#e67e22','#e74c3c','#1abc9c','#9b59b6','#f39c12'];
+    const datasets=peopleInView.map((u,i)=>({
+      label:u.name,
+      data:dates.map(d=>base.filter(s=>s.date===d&&(s.person===u.name||(u.username&&s.username===u.username))).reduce((a,s)=>a+s.hours,0)),
+      backgroundColor:palette2[i%palette2.length],borderRadius:3
+    }));
     chartInst=new Chart(canvas,{type:'bar',data:{labels:dates.map(d=>new Date(d+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})),datasets},
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'bottom',labels:{font:{size:11},boxWidth:12,padding:8}},tooltip:{callbacks:{label:i=>`${i.dataset.label}: ${fmtHours(i.raw)}`}}},scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true,ticks:{callback:v=>v===0?'0':fmtHours(v),stepSize:1}}}}});
   }
@@ -1222,7 +1251,8 @@ function renderReport(){
   PRODUCTS.forEach(p=>{const pct=prodPct(p);if(pct===100)grupos.c100.push(p);else if(pct>=67)grupos.g67.push(p);else if(pct>=33)grupos.g33.push(p);else grupos.low.push(p);});
   let txt=`RELATÓRIO DE HORAS EXTRAS — STUDYO4\nGerado: ${hoje} | Período: ${first} a ${last}\n${'─'.repeat(52)}\n\n`;
   txt+=`RESUMO\nSessões: ${sessions.length} | Total: ${fmtHours(totalH)}\nProgresso: ${overallPct()}% | Produtos 100%: ${completedProds()}/${TOTAL_PRODS}\n\n`;
-  txt+=`POR COLABORADOR\n`;PEOPLE_CFG.forEach(p=>{const st=personStats(p.name);txt+=`• ${p.name}: ${st.pct}% — ${fmtHours(st.hours)} | ${st.sessions} sessões\n`;});
+  txt+=`POR COLABORADOR\n`;
+  activeUsers().forEach(u=>{const st=personStats(u.name);txt+=`• ${u.name}: ${st.pct}% — ${fmtHours(st.hours)} | ${st.sessions} sessões\n`;});
   txt+=`\nPOR TAREFA\n`;TASKS.forEach(t=>{const d=taskTotal(t);txt+=`• ${t}: ${d}/${TOTAL_PRODS} (${Math.round(d/TOTAL_PRODS*100)}%)\n`;});
   txt+=`\nSESSÕES\n`;sessions.forEach(s=>{const d=new Date(s.date+'T12:00:00').toLocaleDateString('pt-BR');const arr=s.prods||(s.prod?[s.prod]:[]);txt+=`• ${d} — ${s.person} (${fmtHours(s.hours)})${s.start?` ${s.start}→${s.end}`:''} | ${arr.join(', ')}${s.desc?' | '+s.desc:''}\n`;});
   txt+=`\n${'─'.repeat(52)}\nStudyo4`;
@@ -1234,16 +1264,22 @@ function copyRpt(){navigator.clipboard.writeText(document.getElementById('rpt-ou
 // POR COLABORADOR
 // ══════════════════════════════════════════════════════
 function renderCollabTabs(){
-  document.getElementById('collab-tabs').innerHTML=PEOPLE_CFG.map(p=>`<button class="collab-tab ${p.name===activeCollab?'on':''}" onclick="selectCollab('${p.name}')">${p.name}</button>`).join('');
+  const people=activeUsers();
+  if(!activeCollab||!people.find(u=>u.name===activeCollab)) activeCollab=people[0]?.name;
+  document.getElementById('collab-tabs').innerHTML=people.map(u=>`<button class="collab-tab ${u.name===activeCollab?'on':''}" onclick="selectCollab('${esc(u.name)}')">${u.name}</button>`).join('');
   renderCollabContent();
 }
 function selectCollab(name){activeCollab=name;document.querySelectorAll('.collab-tab').forEach(b=>b.classList.toggle('on',b.textContent===name));renderCollabContent();}
 function renderCollabContent(){
   if(!activeCollab)return;
   const el=document.getElementById('collab-content');
-  const mySessions=sessions.filter(s=>s.person===activeCollab);
+  const u=users.find(x=>x.name===activeCollab);
+  const mySessions=sessions.filter(s=>
+    s.person===activeCollab ||
+    (u && s.username===u.username)
+  );
   if(!mySessions.length){el.innerHTML=`<div class="empty">Nenhuma sessão para ${activeCollab}.</div>`;return;}
-  const st=personStats(activeCollab);const p=PEOPLE_CFG.find(x=>x.name===activeCollab);const bc=barColor(st.pct);
+  const st=personStats(activeCollab);const bc=barColor(st.pct);
   let html=`<div style="display:flex;gap:12px;margin-bottom:1rem;flex-wrap:wrap">
     <div class="mc" style="flex:1;min-width:110px"><div class="mc-lbl">Horas extras</div><div class="mc-val">${fmtHours(st.hours)}</div></div>
     <div class="mc" style="flex:1;min-width:110px"><div class="mc-lbl">Sessões</div><div class="mc-val">${st.sessions}</div></div>
@@ -1281,8 +1317,7 @@ function renderAdmin(){
   const el=document.getElementById('users-list');
   const colorMap={purple:{bg:'#ede7f6',tc:'#4a2a7a'},blue:{bg:'#d6eaf8',tc:'#1a5276'},green:{bg:'#d8f3dc',tc:'#2d6a4f'},amber:{bg:'#fef3cd',tc:'#7d5a00'}};
   el.innerHTML=users.map((u,i)=>{
-    const pColor=u.color?colorMap[u.color]:null;
-    const p=pColor||PEOPLE_CFG.find(x=>x.name===u.name)||{bg:'#f0efe9',tc:'#6b6860'};
+    const p=userCfg(u.name);
     const senhaLegivel=atob(u.password||'');
     return`<div class="user-row" style="flex-wrap:wrap;gap:8px">
       <div class="user-avatar" style="background:${p.bg};color:${p.tc};width:32px;height:32px;font-size:11px">${u.name.slice(0,2).toUpperCase()}</div>
@@ -1391,12 +1426,20 @@ async function saveEditUser(){
   ok.style.display='block';ok.textContent=`✓ Atualizado! ${migrated>0?`(${migrated} sessão(ões) migrada(s))`:''}`;
   setTimeout(()=>closeModal('edit-user-overlay'),1400);
   renderAdmin();
+  // atualiza o filtro do histórico com o novo nome
+  const hf=document.getElementById('h-filter');
+  if(hf&&isAdmin()){
+    const prev=hf.value;
+    hf.innerHTML='<option value="">Todas</option>';
+    activeUsers().forEach(u=>{const o=document.createElement('option');o.value=u.name;o.textContent=u.name;hf.appendChild(o);});
+    hf.value=prev===oldName?name:prev;
+  }
   if(currentUser?.username===uname) currentUser.name=name;
 }
 // ══════════════════════════════════════════════════════
 function renderConta(){
   if(!currentUser)return;
-  const p=PEOPLE_CFG.find(x=>x.name===currentUser.name)||{bg:'#eee',tc:'#444'};
+  const p=userCfg(currentUser.name);
   document.getElementById('conta-info').innerHTML=`
     <div style="display:flex;align-items:center;gap:12px;padding:10px 0">
       <div class="user-avatar" style="background:${p.bg};color:${p.tc};width:44px;height:44px;font-size:15px">${currentUser.name.slice(0,2).toUpperCase()}</div>
