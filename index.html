@@ -1578,8 +1578,7 @@ ${sep}
   txt+=`RESUMO POR COLABORADOR
 `;
   const colSep='─'.repeat(56);
-  txt+=colSep+'
-';
+  txt+=colSep+'\n';
   activeUsers().forEach(u=>{
     const uSess=rptSessions.filter(s=>s.person===u.name||(s.username&&s.username===u.username));
     const uH=uSess.reduce((a,s)=>a+s.hours,0);
@@ -1590,8 +1589,7 @@ ${sep}
   });
   if(rate>0){
     const total=rptSessions.reduce((a,s)=>a+s.hours,0);
-    txt+=colSep+'
-';
+    txt+=colSep+'\n';
     txt+=`  TOTAL A PAGAR: R$ ${(total*rate).toFixed(2)}
 `;
   }
@@ -1617,8 +1615,7 @@ ${sep}
       txt+=`  ${label.padEnd(18)} ${fmtHours(h).padStart(6)}  ${bar}
 `;
     });
-    txt+='
-';
+    txt+='\n';
   }
 
   // POR TAREFA
@@ -1631,8 +1628,7 @@ ${sep}
     txt+=`  ${t.padEnd(20)} ${String(d).padStart(3)}/${TOTAL_PRODS}  ${pct}%  ${bar}
 `;
   });
-  txt+='
-';
+  txt+='\n';
 
   // SESSÕES DETALHADAS
   txt+=`SESSÕES DETALHADAS
@@ -1994,8 +1990,22 @@ function tryRestoreSession(){
 }
 
 window.addEventListener('load', ()=>{
-  // Inicia o app — sem async no listener para evitar problemas
   iniciar();
+});
+
+// captura qualquer erro JS e mostra na tela
+window.addEventListener('error', (e)=>{
+  document.getElementById('loading-overlay').style.display='flex';
+  document.getElementById('loading-txt').textContent='ERRO JS: '+e.message+' (linha '+e.lineno+')';
+  document.getElementById('loading-txt').style.color='#922b21';
+  document.getElementById('loading-txt').style.fontSize='14px';
+});
+
+window.addEventListener('unhandledrejection', (e)=>{
+  document.getElementById('loading-overlay').style.display='flex';
+  document.getElementById('loading-txt').textContent='ERRO PROMISE: '+(e.reason?.message||e.reason||'desconhecido');
+  document.getElementById('loading-txt').style.color='#922b21';
+  document.getElementById('loading-txt').style.fontSize='14px';
 });
 
 async function iniciar(){
