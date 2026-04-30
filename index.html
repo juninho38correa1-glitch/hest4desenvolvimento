@@ -3,20 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Controle de Horas</title>
+<title>Controle de Horas Extras</title>
 
 <style>
 body{font-family:Arial;background:#f5f5f5;margin:0}
-.box{max-width:400px;margin:80px auto;background:#fff;padding:20px;border-radius:10px}
-input{width:100%;height:40px;margin-bottom:10px;padding:8px}
-button{width:100%;height:40px;background:#222;color:#fff;border:none}
-.loading{position:fixed;inset:0;background:#fff;display:flex;align-items:center;justify-content:center}
+.box{max-width:500px;margin:60px auto;background:#fff;padding:20px;border-radius:10px}
+input,button{width:100%;height:40px;margin-top:8px}
+button{background:#222;color:#fff;border:none;cursor:pointer}
+.loading{position:fixed;inset:0;background:#fff;display:flex;align-items:center;justify-content:center;font-size:18px}
 </style>
 </head>
 
 <body>
 
-<div id="loading" class="loading">Conectando...</div>
+<div id="loading" class="loading">Conectando ao banco...</div>
 
 <div id="login" class="box" style="display:none">
   <h3>Login</h3>
@@ -27,6 +27,16 @@ button{width:100%;height:40px;background:#222;color:#fff;border:none}
 
 <div id="app" class="box" style="display:none">
   <h3 id="nome"></h3>
+
+  <h4>Nova sessão</h4>
+  <input id="date" type="date">
+  <input id="start" type="time">
+  <input id="end" type="time">
+  <button onclick="addSession()">Salvar sessão</button>
+
+  <h4>Histórico</h4>
+  <div id="list"></div>
+
   <button onclick="logout()">Sair</button>
 </div>
 
@@ -44,9 +54,16 @@ const headers = {
 };
 
 // ==========================
+// ESTADO
+// ==========================
+let users = [];
+let sessions = [];
+let currentUser = null;
+
+// ==========================
 // BASE
 // ==========================
-async function getData(key){
+async function sbGet(key){
   try{
     const r = await fetch(`${SB_URL}/rest/v1/app_data?key=eq.${key}&select=value`,{headers});
     const d = await r.json();
@@ -57,13 +74,19 @@ async function getData(key){
   }
 }
 
+async function sbSet(key,value){
+  await fetch(`${SB_URL}/rest/v1/app_data`,{
+    method:'POST',
+    headers:{...headers,'Prefer':'resolution=merge-duplicates'},
+    body:JSON.stringify({key,value,updated_at:new Date().toISOString()})
+  });
+}
+
 // ==========================
 // INIT
 // ==========================
-let users = [];
-
 document.addEventListener('DOMContentLoaded', async ()=>{
-  users = await getData('users') || [];
+  users = await sbGet('users') || [];
 
   document.getElementById('loading').style.display='none';
   document.getElementById('login').style.display='block';
@@ -72,20 +95,98 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 // ==========================
 // LOGIN
 // ==========================
-function login(){
+async function login(){
   const u = document.getElementById('user').value.toLowerCase();
   const p = btoa(document.getElementById('pass').value);
 
   const user = users.find(x=>x.username===u && x.password===p);
 
   if(!user){
-    alert('login inválido');
+    alert('Login inválido');
     return;
   }
 
+  currentUser = user;
+
   document.getElementById('login').style.display='none';
+  document.getElementById('loading').style.display='flex';
+
+  await loadSessions();
+
+  document.getElementById('loading').style.display='none';
   document.getElementById('app').style.display='block';
+
   document.getElementById('nome').innerText=user.name;
+
+  render();
+}
+
+// ==========================
+// SESSÕES
+// ==========================
+async function loadSessions(){
+  if(currentUser.role === 'admin'){
+    sessions = [];
+
+    for(const u of users){
+      if(!u.active) continue;
+
+      const d = await sbGet('sessions_'+u.username);
+      if(Array.isArray(d)) sessions.push(...d);
+    }
+
+  }else{
+    const d = await sbGet('sessions_'+currentUser.username);
+    sessions = Array.isArray(d)?d:[];
+  }
+}
+
+async function saveSessions(){
+  const mine = sessions.filter(s=>s.username===currentUser.username);
+
+  await sbSet('sessions_'+currentUser.username,mine);
+}
+
+// ==========================
+// CRUD
+// ==========================
+function addSession(){
+  const date = document.getElementById('date').value;
+  const start = document.getElementById('start').value;
+  const end = document.getElementById('end').value;
+
+  if(!date || !start || !end){
+    alert('Preencha tudo');
+    return;
+  }
+
+  sessions.push({
+    date,
+    start,
+    end,
+    username: currentUser.username
+  });
+
+  saveSessions();
+  render();
+}
+
+// ==========================
+// UI
+// ==========================
+function render(){
+  const el = document.getElementById('list');
+  el.innerHTML = '';
+
+  sessions
+    .filter(s=> currentUser.role==='admin' || s.username===currentUser.username)
+    .forEach(s=>{
+      el.innerHTML += `
+        <div style="padding:6px;border-bottom:1px solid #ccc">
+          ${s.date} | ${s.start} - ${s.end}
+        </div>
+      `;
+    });
 }
 
 // ==========================
