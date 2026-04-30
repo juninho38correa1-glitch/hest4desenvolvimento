@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Studyo 4 — Horas Extras</title>
+<title>Studyo4 — Horas Extras</title>
 <style>
 :root{
   --bg:#f7f6f3;--surface:#fff;--surface2:#f0efe9;--border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.15);
@@ -607,22 +607,26 @@ const sbHeaders = {
 };
 
 async function sbGet(key){
-  // timeout de 8 segundos para não travar
-  const controller = new AbortController();
-  const timeout = setTimeout(()=>controller.abort(), 8000);
-  try{
-    const r = await fetch(`${SB_URL}/rest/v1/app_data?key=eq.${encodeURIComponent(key)}&select=value`, {
-      headers: sbHeaders,
-      signal: controller.signal
-    });
-    clearTimeout(timeout);
-    if(!r.ok) throw new Error('sbGet '+r.status);
-    const d = await r.json();
-    return d.length ? d[0].value : null;
-  }catch(e){
-    clearTimeout(timeout);
-    throw e;
-  }
+  const r = await fetch(`${SB_URL}/rest/v1/app_data?key=eq.${encodeURIComponent(key)}&select=value`, {headers: sbHeaders});
+  if(!r.ok) throw new Error('sbGet '+r.status);
+  const d = await r.json();
+  return d.length ? d[0].value : null;
+}
+
+// carrega dados globais com timeout de 6s no total
+async function loadGlobalData(){
+  const timeout = new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),6000));
+  const load = Promise.all([
+    sbGet('checks'), sbGet('taskDates'),
+    sbGet('obs'), sbGet('users'), sbGet('pendingUsers')
+  ]).then(([c,td,o,u,p])=>{
+    if(c)  checks       = c;
+    if(td) taskDates    = td;
+    if(o)  obs          = o;
+    if(u)  users        = u;
+    if(p)  pendingUsers = p;
+  });
+  await Promise.race([load, timeout]);
 }
 
 async function sbSet(key, value){
@@ -1989,41 +1993,9 @@ function renderAll(){
   renderVisao();
 }
 
-window.addEventListener('load', async ()=>{
-  showLoading('Conectando ao banco de dados...');
-
-  let done = false;
-
-  // failsafe: se demorar 10s, abre login de qualquer forma
-  const failsafe = setTimeout(()=>{
-    if(done) return;
-    done = true;
-    console.warn('Timeout — abrindo login offline');
-    hideLoading();
-    document.getElementById('db-status').textContent='⚠️ Conexão lenta';
-    document.getElementById('db-status').className='db-status err';
-    tryRestoreSession();
-  }, 10000);
-
-  try{
-    document.getElementById('db-status').textContent='● Conectando...';
-    document.getElementById('db-status').className='db-status';
-    await loadGlobalData();
-    document.getElementById('db-status').textContent='● Banco conectado';
-    document.getElementById('db-status').className='db-status ok';
-  }catch(e){
-    console.error('Erro Supabase:', e);
-    document.getElementById('db-status').textContent='⚠️ Sem conexão';
-    document.getElementById('db-status').className='db-status err';
-  }
-
-  if(done) return; // failsafe já disparou
-  done = true;
-  clearTimeout(failsafe);
-  hideLoading();
-  tryRestoreSession();
-});
-
+// ══════════════════════════════════════════════════════
+// INIT — sempre no final, após todas as funções
+// ══════════════════════════════════════════════════════
 function tryRestoreSession(){
   const saved = sessionStorage.getItem('s04_session');
   if(saved){
@@ -2035,6 +2007,24 @@ function tryRestoreSession(){
   }
   showLogin();
 }
+
+window.addEventListener('load', async ()=>{
+  showLoading('Conectando ao banco de dados...');
+  document.getElementById('db-status').textContent='● Conectando...';
+  document.getElementById('db-status').className='db-status';
+  try{
+    await loadGlobalData();
+    document.getElementById('db-status').textContent='● Banco conectado';
+    document.getElementById('db-status').className='db-status ok';
+  }catch(e){
+    console.warn('Supabase:', e.message);
+    document.getElementById('db-status').textContent='⚠️ Modo offline';
+    document.getElementById('db-status').className='db-status err';
+  }
+  hideLoading();
+  tryRestoreSession();
+});
+
 </script>
 </body>
 </html>
