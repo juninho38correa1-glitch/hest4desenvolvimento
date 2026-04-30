@@ -1993,23 +1993,33 @@ function tryRestoreSession(){
   showLogin();
 }
 
-window.addEventListener('load', async ()=>{
-  showLoading('Conectando ao banco de dados...');
-  document.getElementById('db-status').textContent='● Conectando...';
-  document.getElementById('db-status').className='db-status';
+window.addEventListener('load', ()=>{
+  // Inicia o app — sem async no listener para evitar problemas
+  iniciar();
+});
+
+async function iniciar(){
+  // Mostra loading
+  document.getElementById('loading-overlay').style.display='flex';
+  document.getElementById('loading-txt').textContent='Conectando ao banco de dados...';
+
   try{
-    await loadGlobalData();
+    // Tenta conectar ao Supabase (timeout de 6s)
+    const timeoutPromise = new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),6000));
+    await Promise.race([loadGlobalData(), timeoutPromise]);
     document.getElementById('db-status').textContent='● Banco conectado';
     document.getElementById('db-status').className='db-status ok';
   }catch(e){
-    console.warn('Supabase:', e.message);
+    // Falhou ou timeout — continua com dados padrão
+    console.warn('Supabase offline:', e.message);
     document.getElementById('db-status').textContent='⚠️ Modo offline';
     document.getElementById('db-status').className='db-status err';
   }
-  hideLoading();
-  tryRestoreSession();
-});
 
+  // SEMPRE esconde loading e vai para login/app
+  document.getElementById('loading-overlay').style.display='none';
+  tryRestoreSession();
+}
 </script>
 </body>
 </html>
