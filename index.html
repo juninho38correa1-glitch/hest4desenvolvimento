@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Desenvolvimento — Studyo4</title>
+<title>Studyo4 — Horas Extras</title>
 <style>
 :root{
   --bg:#f7f6f3;--surface:#fff;--surface2:#f0efe9;--border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.15);
@@ -147,6 +147,102 @@ tr:hover td{background:var(--surface2)}
 .spinner{width:36px;height:36px;border:3px solid var(--border2);border-top-color:var(--text);border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .loading-txt{font-size:13px;color:var(--text2);font-family:Arial,sans-serif}
+
+/* ── BOTTOM NAV MOBILE ── */
+.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border2);z-index:300;padding:0;height:60px}
+.bottom-nav-inner{display:flex;align-items:stretch;height:100%}
+.bn-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:transparent;color:var(--text3);font-size:9px;font-family:Arial,sans-serif;cursor:pointer;padding:6px 2px;transition:color .15s;-webkit-tap-highlight-color:transparent}
+.bn-tab .bn-icon{font-size:18px;line-height:1}
+.bn-tab.on{color:var(--text)}
+.bn-tab.admin-bn{color:var(--amber)}
+.bn-tab.admin-bn.on{color:var(--amber)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  /* layout */
+  .container{padding:1rem}
+  .topbar{padding:0 1rem;height:50px}
+  .logo{font-size:13px}
+  .logo span{display:none}
+  .sync-label{display:none}
+  .admin-badge{display:none}
+  #top-name{font-size:12px}
+
+  /* body padding para bottom nav */
+  body{padding-bottom:60px}
+  .bottom-nav{display:block}
+
+  /* tabs viram bottom nav — esconde tabs normais */
+  .tabs{display:none}
+
+  /* métricas: 2x2 no mobile */
+  .metrics{grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:1rem}
+  .mc{padding:10px 12px}
+  .mc-val{font-size:20px}
+
+  /* cards */
+  .card{padding:1rem;border-radius:var(--radius-sm)}
+
+  /* person grid: 1 coluna */
+  .person-grid{grid-template-columns:1fr}
+
+  /* form-row: sempre 1 coluna no mobile */
+  .form-row{grid-template-columns:1fr !important}
+
+  /* sel-row: coluna */
+  .sel-row{flex-direction:column;gap:8px}
+  .sel-row .fg{width:100%}
+
+  /* drawer: tela cheia no mobile */
+  .drawer{width:100%;right:-100%}
+  .drawer.open{right:0}
+
+  /* modal: tela quase cheia */
+  .modal-overlay{padding-top:20px;padding-left:8px;padding-right:8px}
+  .modal-box{max-height:90vh;border-radius:var(--radius)}
+
+  /* tabela: scroll horizontal */
+  .tbl-wrap{-webkit-overflow-scrolling:touch}
+  table{font-size:11px}
+  th,td{padding:6px 7px}
+
+  /* checklist: 1 coluna */
+  .ck-grid{grid-template-columns:1fr 1fr}
+
+  /* user-row: wrap */
+  .user-row{flex-wrap:wrap;gap:6px}
+  .user-row-name{min-width:100%}
+
+  /* admin form: 1 coluna */
+  #sec-admin .form-row{grid-template-columns:1fr !important}
+
+  /* registrar sessão: horários lado a lado, resto 1 coluna */
+  #sec-sessao .form-row:first-of-type{grid-template-columns:1fr 1fr !important}
+
+  /* prod list: 1 coluna */
+  #prod-list{grid-template-columns:1fr 1fr !important}
+
+  /* loading */
+  .loading-overlay{padding:1rem}
+
+  /* chart */
+  .chart-wrap{height:160px}
+
+  /* collab tabs: scroll horizontal */
+  .collab-tabs{overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px}
+  .collab-tab{white-space:nowrap;flex-shrink:0}
+
+  /* topbar user area */
+  .user-area{gap:6px}
+  .btn-logout{padding:3px 8px;font-size:11px}
+  #btn-save-retry{font-size:11px;padding:3px 8px}
+
+  /* login */
+  .login-box{padding:1.5rem}
+
+  /* footer */
+  .container > div:last-child{margin-bottom:0.5rem}
+}
 </style>
 </head>
 <body>
@@ -161,7 +257,7 @@ tr:hover td{background:var(--surface2)}
 <div id="login-screen" class="login-screen" style="display:none">
   <div class="login-box">
     <div class="login-logo">STUDYO4</div>
-    <div class="login-sub">Desenvolvimento</div>
+    <div class="login-sub">Controle de Horas Extras</div>
     <div id="login-err" class="login-err err-red"></div>
     <div class="form-row" style="grid-template-columns:1fr">
       <div class="fg"><label>Usuário</label><input type="text" id="li-user" placeholder="seu.usuario" autocomplete="username"></div>
@@ -194,7 +290,7 @@ tr:hover td{background:var(--surface2)}
 <!-- APP -->
 <div id="app" style="display:none">
   <div class="topbar">
-    <div class="logo">Desenvolvimento <span>/ STUDYO4</span></div>
+    <div class="logo">STUDYO4 <span>/ Horas Extras</span></div>
     <div class="user-area">
       <div class="sync-label" id="sync-label"><span class="sync-dot" id="sync-dot" style="background:#a09e98"></span><span id="sync-txt">–</span></div>
       <button id="btn-save-retry" onclick="saveSessionsOnly()" style="display:none;font-size:12px;padding:4px 10px;border:1px solid var(--red);border-radius:var(--radius-sm);cursor:pointer;background:var(--red-bg);color:var(--red);font-family:Arial,sans-serif">↻ Tentar salvar</button>
@@ -342,29 +438,44 @@ tr:hover td{background:var(--surface2)}
       </div>
       <div class="card">
         <div class="card-ttl">Adicionar usuário</div>
-        <div class="form-row" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr auto">
+        <div class="form-row" style="grid-template-columns:1fr 1fr 1fr 1fr auto">
           <div class="fg"><label>Nome exibido</label><input type="text" id="new-name" placeholder="João Silva"></div>
           <div class="fg"><label>Login</label><input type="text" id="new-username" placeholder="joao.silva"></div>
           <div class="fg"><label>Senha</label><input type="password" id="new-pass" placeholder="••••••"></div>
           <div class="fg"><label>Perfil</label><select id="new-role"><option value="user">Funcionário</option><option value="admin">Admin</option></select></div>
-          <div class="fg"><label>Cor do card</label>
-            <select id="new-color">
-              <option value="">— padrão —</option>
-              <option value="purple">Roxo</option>
-              <option value="blue">Azul</option>
-              <option value="green">Verde</option>
-              <option value="amber">Âmbar</option>
-            </select>
-          </div>
           <button class="btn btn-p" onclick="addUser()" style="align-self:flex-end">+ Adicionar</button>
         </div>
-        <div style="font-size:11px;color:var(--text3);font-family:Arial,sans-serif;margin-top:4px">O <strong>Login</strong> é usado para entrar no sistema. O <strong>Nome exibido</strong> aparece nos registros e relatórios.</div>
+        <div style="font-size:11px;color:var(--text3);font-family:Arial,sans-serif;margin-top:4px">O <strong>Login</strong> é usado para entrar no sistema. O <strong>Nome exibido</strong> aparece nos registros e relatórios. A cor é atribuída automaticamente.</div>
       </div>
     </div>
     <div style="text-align:center;padding:1.5rem 0 2rem;font-size:11px;color:var(--text3);font-family:Arial,sans-serif">
       © Junior Corrêa · Todos os direitos reservados
     </div>
   </div>
+
+  <!-- BOTTOM NAV MOBILE -->
+  <nav class="bottom-nav" id="bottom-nav">
+    <div class="bottom-nav-inner">
+      <button class="bn-tab on" onclick="sw('visao')" data-tab="visao">
+        <span class="bn-icon">📊</span>Visão
+      </button>
+      <button class="bn-tab" onclick="sw('tabela')" data-tab="tabela">
+        <span class="bn-icon">📋</span>Produtos
+      </button>
+      <button class="bn-tab" onclick="sw('sessao')" data-tab="sessao">
+        <span class="bn-icon">➕</span>Registrar
+      </button>
+      <button class="bn-tab" onclick="sw('historico')" data-tab="historico">
+        <span class="bn-icon">📅</span>Histórico
+      </button>
+      <button class="bn-tab" onclick="sw('conta')" data-tab="conta">
+        <span class="bn-icon">👤</span>Conta
+      </button>
+      <button class="bn-tab admin-bn" id="bn-admin" onclick="sw('admin')" data-tab="admin" style="display:none">
+        <span class="bn-icon">⚙️</span>Admin
+      </button>
+    </div>
+  </nav>
 </div>
 </div>
 
@@ -504,43 +615,88 @@ async function sbSetSessions(data){
 }
 
 async function loadAllFromSupabase(){
-  const [c, s, td, o, u, p] = await Promise.all([
-    sbGet('checks'), sbGet('sessions'), sbGet('taskDates'),
+  // carrega dados globais (checks, users, etc.)
+  const [c, td, o, u, p] = await Promise.all([
+    sbGet('checks'), sbGet('taskDates'),
     sbGet('obs'), sbGet('users'), sbGet('pendingUsers')
   ]);
-  if(c)    checks       = c;
-  if(s)    sessions     = s;
-  if(td)   taskDates    = td;
-  if(o)    obs          = o;
-  if(u)    users        = u;
-  if(p)    pendingUsers = p;
+  if(c)  checks       = c;
+  if(td) taskDates    = td;
+  if(o)  obs          = o;
+  if(u)  users        = u;
+  if(p)  pendingUsers = p;
+
+  // carrega sessões: admin busca de todos, funcionário só a sua
+  await loadSessions();
+}
+
+async function loadSessions(){
+  if(!currentUser) return;
+  if(isAdmin()){
+    // admin: carrega sessões de todos os usuários ativos
+    const allUsers = users.filter(u=>u.active);
+    const results = await Promise.all(
+      allUsers.map(u => sbGet('sessions_'+u.username).catch(()=>null))
+    );
+    sessions = [];
+    results.forEach(r=>{ if(r && Array.isArray(r)) sessions.push(...r); });
+    sessions.sort((a,b)=>a.date.localeCompare(b.date));
+  } else {
+    // funcionário: só as suas
+    const mine = await sbGet('sessions_'+currentUser.username).catch(()=>null);
+    sessions = mine && Array.isArray(mine) ? mine : [];
+    sessions.sort((a,b)=>a.date.localeCompare(b.date));
+  }
+}
+
+async function saveSessionsOnly(){
+  if(!currentUser) return;
+  setSyncing('saving');
+  try{
+    // cada usuário salva SÓ as suas sessões na sua chave
+    const mySessions = sessions.filter(s=>
+      s.username===currentUser.username ||
+      (!s.username && s.person===currentUser.name)
+    );
+    // garante que todas têm o username
+    mySessions.forEach(s=>{ if(!s.username) s.username=currentUser.username; });
+    await sbSet('sessions_'+currentUser.username, mySessions);
+    setSyncing('ok');
+  }catch(e){setSyncing('err');throw e;}
+}
+
+// salva sessões de um usuário específico (usado pelo admin ao editar/deletar)
+async function saveSessionsFor(username){
+  const userSessions = sessions.filter(s=>
+    s.username===username ||
+    (!s.username && s.person===(users.find(u=>u.username===username)?.name))
+  );
+  await sbSet('sessions_'+username, userSessions);
 }
 
 async function saveAllToSupabase(){
   setSyncing('saving');
   try{
-    await Promise.all([
+    const base = [
       sbSet('checks', checks),
-      sbSet('sessions', sessions),
       sbSet('taskDates', taskDates),
       sbSet('obs', obs),
       sbSet('users', users),
       sbSet('pendingUsers', pendingUsers)
-    ]);
+    ];
+    // salva sessões de cada usuário na sua própria chave
+    const allUsers = users.filter(u=>u.active);
+    allUsers.forEach(u=>{
+      const uSessions=sessions.filter(s=>s.username===u.username||(s.person===u.name&&!s.username));
+      base.push(sbSet('sessions_'+u.username, uSessions));
+    });
+    await Promise.all(base);
     setSyncing('ok');
   }catch(e){
     setSyncing('err');
     console.error('Supabase save error:', e);
     throw e;
   }
-}
-
-async function saveSessionsOnly(){
-  setSyncing('saving');
-  try{
-    await sbSet('sessions', sessions);
-    setSyncing('ok');
-  }catch(e){setSyncing('err');throw e;}
 }
 
 async function saveChecksOnly(){
@@ -682,14 +838,39 @@ function activeUsers(){
 }
 
 // Cores dinâmicas: usa PEOPLE_CFG se o nome bater, senão usa color do user
+// Paleta automática de cores para usuários
+const AUTO_COLORS=[
+  {key:'purple', bg:'#ede7f6',tc:'#4a2a7a'},
+  {key:'blue',   bg:'#d6eaf8',tc:'#1a5276'},
+  {key:'green',  bg:'#d8f3dc',tc:'#2d6a4f'},
+  {key:'amber',  bg:'#fef3cd',tc:'#7d5a00'},
+  {key:'red',    bg:'#fde8e8',tc:'#922b21'},
+  {key:'teal',   bg:'#d0f0ec',tc:'#0d6e5e'},
+  {key:'pink',   bg:'#fce4f3',tc:'#8b1a6b'},
+  {key:'indigo', bg:'#e5e7fb',tc:'#3730a3'},
+  {key:'orange', bg:'#feebd0',tc:'#92400e'},
+  {key:'cyan',   bg:'#cff4fc',tc:'#0c5460'},
+];
+
+function getAutoColor(username){
+  // atribui cor baseada no índice do usuário na lista (consistente e sem colisão)
+  const idx = users.findIndex(u=>u.username===username);
+  return AUTO_COLORS[idx >= 0 ? idx % AUTO_COLORS.length : 0];
+}
+
 function userCfg(nameOrUser){
   const name = typeof nameOrUser==='string' ? nameOrUser : nameOrUser.name;
   const fromCfg = PEOPLE_CFG.find(x=>x.name===name);
   if(fromCfg) return fromCfg;
   const u = users.find(x=>x.name===name);
-  const colorMap={purple:{bg:'#ede7f6',tc:'#4a2a7a'},blue:{bg:'#d6eaf8',tc:'#1a5276'},green:{bg:'#d8f3dc',tc:'#2d6a4f'},amber:{bg:'#fef3cd',tc:'#7d5a00'}};
-  const c = u?.color ? colorMap[u.color] : null;
-  return c || {bg:'#f0efe9',tc:'#6b6860',color:'#6b6860'};
+  if(!u) return {bg:'#f0efe9',tc:'#6b6860'};
+  // cor manual sobrescreve a automática
+  if(u.color){
+    const manual=AUTO_COLORS.find(c=>c.key===u.color);
+    if(manual) return manual;
+  }
+  // cor automática baseada na posição do usuário
+  return getAutoColor(u.username);
 }
 
 // ══════════════════════════════════════════════════════
@@ -778,6 +959,9 @@ function loginSuccess(user){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('register-screen').style.display='none';
   document.getElementById('app').style.display='block';
+  // configura bottom nav: mostra aba admin só para admin
+  const bnAdmin=document.getElementById('bn-admin');
+  if(bnAdmin) bnAdmin.style.display=isAdmin()?'flex':'none';
   // sempre começa na visão geral
   sw('visao');
   // recarrega dados frescos do Supabase
@@ -859,6 +1043,10 @@ function sw(t){
     const tid=el.getAttribute('onclick')?.match(/sw\('(\w+)'\)/)?.[1];
     el.classList.toggle('on',tid===t);
   });
+  // sincroniza bottom nav mobile
+  document.querySelectorAll('.bn-tab').forEach(el=>{
+    el.classList.toggle('on',el.dataset.tab===t);
+  });
   document.querySelectorAll('.sec').forEach(el=>el.classList.remove('on'));
   document.getElementById('sec-'+t).classList.add('on');
   if(t==='visao')renderVisao();
@@ -869,6 +1057,7 @@ function sw(t){
   if(t==='colaborador'){activeCollab=activeCollab||(activeUsers()[0]?.name);renderCollabTabs();renderMetrics();}
   if(t==='admin')renderAdmin();
   if(t==='conta')renderConta();
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
 // ══════════════════════════════════════════════════════
@@ -1086,13 +1275,12 @@ async function addSession(){
   selectedProds.clear();renderProdList();renderChips();renderMetrics();
 
   try{
-    await saveSessionsOnly();
+    await saveSessionsOnly(); // já faz merge interno antes de salvar
     document.getElementById('task-checks').innerHTML=`<div style="font-size:13px;color:var(--green);font-family:Arial,sans-serif">✓ Salvo! ${start}→${end} (${fmtHours(hours)}) · ${prods.length} produto(s)</div>`;
+    renderMetrics(); // atualiza com dados pós-merge
   }catch(e){
-    // se falhar no Supabase, avisa mas não perde os dados (ainda estão em memória)
     console.error('Erro ao salvar sessão:', e);
-    document.getElementById('task-checks').innerHTML=`<div style="font-size:13px;color:var(--red);font-family:Arial,sans-serif">⚠️ Erro ao salvar no banco. Tente clicar em "Salvar agora" na barra superior.</div>`;
-    // botão de retry
+    document.getElementById('task-checks').innerHTML=`<div style="font-size:13px;color:var(--red);font-family:Arial,sans-serif">⚠️ Erro ao salvar. Tente novamente.</div>`;
     document.getElementById('btn-save-retry').style.display='inline-block';
   }
 }
@@ -1105,7 +1293,13 @@ function renderHistory(){
   renderMetrics(fp||null);
   const base=visibleSessions();
   let indices=base.map((_,i)=>sessions.indexOf(base[i]));
-  if(fp)indices=indices.filter(i=>sessions[i]?.person===fp);
+  if(fp){
+    const fpUser=users.find(u=>u.name===fp);
+    indices=indices.filter(i=>{
+      const s=sessions[i];
+      return s?.person===fp || (fpUser && s?.username===fpUser.username);
+    });
+  }
   indices=indices.slice().reverse();
   const el=document.getElementById('hist-tbl');
   if(!indices.length){el.innerHTML='<div class="empty">Nenhuma sessão encontrada.</div>';return;}
@@ -1194,14 +1388,26 @@ async function saveEditSession(){
   let hours=parseFloat(document.getElementById('edit-hours').value);
   if(start&&end){const[sh,sm]=start.split(':').map(Number);const[eh,em]=end.split(':').map(Number);const tm=(eh*60+em)-(sh*60+sm);if(tm>0)hours=Math.round((tm/60)*1000)/1000;}
   if(!date||!hours){alert('Preencha data e horários.');return;}
+  const editedUsername=sessions[editIndex]?.username||currentUser.username;
+  const editedTs=sessions[editIndex]?.ts;
   sessions[editIndex]={...sessions[editIndex],date,hours,start,end,desc};
   sessions.sort((a,b)=>a.date.localeCompare(b.date));
-  await saveSessionsOnly();renderMetrics();renderHistory();renderChart();closeModal('edit-overlay');
+  // salva só a chave do dono da sessão editada
+  await saveSessionsFor(editedUsername);
+  setSyncing('ok');
+  renderMetrics();renderHistory();renderChart();closeModal('edit-overlay');
 }
+
 async function delSession(i){
   if(!confirm('Remover esta sessão?'))return;
+  const delUsername=sessions[i]?.username||currentUser.username;
+  const delTs=sessions[i]?.ts;
+  // remove da memória local
   sessions.splice(i,1);
-  await saveSessionsOnly();renderMetrics();renderHistory();renderChart();
+  // salva só a chave do dono da sessão deletada
+  await saveSessionsFor(delUsername);
+  setSyncing('ok');
+  renderMetrics();renderHistory();renderChart();
 }
 
 // ══════════════════════════════════════════════════════
@@ -1479,13 +1685,14 @@ async function addUser(){
   const username=document.getElementById('new-username').value.trim().toLowerCase().replace(/\s/g,'');
   const pass=document.getElementById('new-pass').value;
   const role=document.getElementById('new-role').value;
-  const color=document.getElementById('new-color').value||'';
+  const color=document.getElementById('new-color')?document.getElementById('new-color').value||'':'';
   if(!name||!username||!pass){alert('Preencha nome, login e senha.');return;}
   if(users.find(u=>u.username===username)){alert('Este login já existe.');return;}
+  // cor vazia = automática (baseada no índice após inserção)
   users.push({username,name,role,password:btoa(pass),active:true,color});
   await saveUsersOnly();renderAdmin();
   ['new-name','new-username','new-pass'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('new-color').value='';
+  const nc=document.getElementById('new-color');if(nc)nc.value='';
 }
 async function toggleUserActive(i){if(users[i].username==='junior')return;users[i].active=!users[i].active;await saveUsersOnly();renderAdmin();}
 async function removeUser(i){if(users[i].username==='junior')return;if(!confirm(`Remover ${users[i].name}?`))return;users.splice(i,1);await saveUsersOnly();renderAdmin();}
