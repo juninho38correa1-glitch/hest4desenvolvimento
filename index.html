@@ -175,8 +175,8 @@ tr:hover td{background:var(--surface2)}
   /* tabs viram bottom nav — esconde tabs normais */
   .tabs{display:none}
 
-  /* métricas: 2x2 no mobile */
-  .metrics{grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:1rem}
+  /* métricas: 3+2 no mobile */
+  .metrics{grid-template-columns:repeat(2,1fr) !important;gap:8px;margin-bottom:1rem}
   .mc{padding:10px 12px}
   .mc-val{font-size:20px}
 
@@ -304,8 +304,9 @@ tr:hover td{background:var(--surface2)}
   </div>
 
   <div class="container">
-    <div class="metrics">
+    <div class="metrics" style="grid-template-columns:repeat(5,1fr)">
       <div class="mc"><div class="mc-lbl" id="m-h-lbl">Total de horas</div><div class="mc-val" id="m-h">–</div><div class="mc-sub" id="m-h-sub">em horas extras</div></div>
+      <div class="mc"><div class="mc-lbl" id="m-mes-lbl">Este mês</div><div class="mc-val" id="m-mes">–</div><div class="mc-sub" id="m-mes-sub">horas no mês atual</div></div>
       <div class="mc"><div class="mc-lbl" id="m-s-lbl">Sessões</div><div class="mc-val" id="m-s">–</div><div class="mc-sub" id="m-s-sub">registradas</div></div>
       <div class="mc"><div class="mc-lbl">Progresso geral</div><div class="mc-val" id="m-t">–</div><div class="mc-sub">de todas as tarefas</div></div>
       <div class="mc"><div class="mc-lbl">Produtos 100%</div><div class="mc-val" id="m-p">–</div><div class="mc-sub">concluídos</div></div>
@@ -380,10 +381,14 @@ tr:hover td{background:var(--surface2)}
 
     <div class="sec" id="sec-historico">
       <div class="card">
-        <div class="sel-row" id="hist-filter-row">
+        <div class="sel-row" id="hist-filter-row" style="flex-wrap:wrap;gap:10px;align-items:flex-end">
           <div class="fg"><label>Filtrar pessoa</label>
             <select id="h-filter" onchange="renderHistory();renderChart()"><option value="">Todas</option></select>
           </div>
+          <div class="fg"><label>De</label><input type="date" id="h-date-from" onchange="renderHistory();renderChart()"></div>
+          <div class="fg"><label>Até</label><input type="date" id="h-date-to" onchange="renderHistory();renderChart()"></div>
+          <button class="btn btn-sm" onclick="clearHistFilter()" style="align-self:flex-end">Limpar filtros</button>
+          <div id="hist-total" style="align-self:flex-end;font-size:12px;color:var(--text2);font-family:Arial,sans-serif"></div>
         </div>
         <div id="hist-tbl"><div class="empty">Nenhuma sessão registrada.</div></div>
         <div class="chart-wrap"><canvas id="hchart"></canvas></div>
@@ -393,10 +398,21 @@ tr:hover td{background:var(--surface2)}
     <div class="sec" id="sec-relatorio">
       <div class="card">
         <div class="card-ttl">Relatório para a direção</div>
+        <!-- Filtros e configurações do relatório -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid var(--border)">
+          <div class="fg"><label>Período — de</label><input type="date" id="rpt-from" onchange="renderReport()"></div>
+          <div class="fg"><label>Até</label><input type="date" id="rpt-to" onchange="renderReport()"></div>
+          <div class="fg"><label>Valor/hora (R$)</label><input type="number" id="rpt-rate" placeholder="0,00" min="0" step="0.01" style="width:110px" onchange="renderReport()"></div>
+          <button class="btn btn-sm" onclick="clearRptFilter()" style="align-self:flex-end">Limpar filtros</button>
+        </div>
         <div id="rpt-out"><div class="empty">Carregando...</div></div>
-        <div style="display:flex;gap:8px;margin-top:12px">
-          <button class="btn btn-p" onclick="copyRpt()">Copiar</button>
-          <button class="btn" onclick="renderReport()">Atualizar</button>
+        <div id="rpt-chart-wrap" style="display:none;margin-top:1.25rem;height:200px;border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;background:var(--bg)">
+          <canvas id="rpt-chart"></canvas>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <button class="btn btn-p" onclick="copyRpt()">📋 Copiar</button>
+          <button class="btn" onclick="printRpt()">🖨️ Imprimir / PDF</button>
+          <button class="btn" onclick="renderReport()">↻ Atualizar</button>
         </div>
       </div>
     </div>
@@ -1084,19 +1100,31 @@ function renderMetrics(fp){
   const fpUser=fp?users.find(u=>u.name===fp):null;
   const filtered=fp?base.filter(s=>s.person===fp||(fpUser&&s.username===fpUser.username)):base;
   const h=filtered.reduce((s,x)=>s+x.hours,0);
+
+  // horas do mês atual
+  const now=new Date();
+  const mesAtual=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const hMes=filtered.filter(s=>s.date&&s.date.startsWith(mesAtual)).reduce((a,s)=>a+s.hours,0);
+  const mesLabel=now.toLocaleDateString('pt-BR',{month:'long'});
+
   document.getElementById('m-h').textContent=fmtHours(h);
+  document.getElementById('m-mes').textContent=fmtHours(hMes);
+  document.getElementById('m-mes-sub').textContent=mesLabel;
   document.getElementById('m-s').textContent=filtered.length;
   document.getElementById('m-t').textContent=overallPct()+'%';
   document.getElementById('m-p').textContent=completedProds()+'/'+TOTAL_PRODS;
+
   if(fp){
     const pcfg=userCfg(fp);const color=pcfg?pcfg.tc:'var(--text)';
     document.getElementById('m-h-lbl').innerHTML=`Horas de <span style="color:${color};font-weight:700">${fp}</span>`;
-    document.getElementById('m-h-sub').textContent='neste filtro';
+    document.getElementById('m-h-sub').textContent='total acumulado';
+    document.getElementById('m-mes-lbl').innerHTML=`<span style="color:${color};font-weight:700">${fp}</span> — mês`;
     document.getElementById('m-s-lbl').innerHTML=`Sessões de <span style="color:${color};font-weight:700">${fp}</span>`;
     document.getElementById('m-s-sub').textContent='registradas';
   }else{
     document.getElementById('m-h-lbl').textContent=isAdmin()?'Total de horas':'Minhas horas';
-    document.getElementById('m-h-sub').textContent='em horas extras';
+    document.getElementById('m-h-sub').textContent='acumulado total';
+    document.getElementById('m-mes-lbl').textContent=isAdmin()?'Total este mês':'Meu mês';
     document.getElementById('m-s-lbl').textContent=isAdmin()?'Sessões realizadas':'Minhas sessões';
     document.getElementById('m-s-sub').textContent='registradas';
   }
@@ -1305,8 +1333,17 @@ async function addSession(){
 // ══════════════════════════════════════════════════════
 // HISTÓRICO
 // ══════════════════════════════════════════════════════
+function clearHistFilter(){
+  document.getElementById('h-filter').value='';
+  document.getElementById('h-date-from').value='';
+  document.getElementById('h-date-to').value='';
+  renderHistory();renderChart();
+}
+
 function renderHistory(){
   const fp=document.getElementById('h-filter').value;
+  const dateFrom=document.getElementById('h-date-from')?.value||'';
+  const dateTo=document.getElementById('h-date-to')?.value||'';
   renderMetrics(fp||null);
   const base=visibleSessions();
   let indices=base.map((_,i)=>sessions.indexOf(base[i]));
@@ -1317,7 +1354,15 @@ function renderHistory(){
       return s?.person===fp || (fpUser && s?.username===fpUser.username);
     });
   }
+  if(dateFrom) indices=indices.filter(i=>sessions[i]?.date>=dateFrom);
+  if(dateTo)   indices=indices.filter(i=>sessions[i]?.date<=dateTo);
   indices=indices.slice().reverse();
+
+  // total filtrado
+  const totalH=indices.reduce((a,i)=>a+(sessions[i]?.hours||0),0);
+  const totalEl=document.getElementById('hist-total');
+  if(totalEl) totalEl.textContent=indices.length?`${indices.length} sessão(ões) · ${fmtHours(totalH)} total`:'';
+
   const el=document.getElementById('hist-tbl');
   if(!indices.length){el.innerHTML='<div class="empty">Nenhuma sessão encontrada.</div>';return;}
   const rows=indices.map(ri=>{
@@ -1470,24 +1515,213 @@ function renderChart(){
 // ══════════════════════════════════════════════════════
 // RELATÓRIO
 // ══════════════════════════════════════════════════════
+function clearRptFilter(){
+  document.getElementById('rpt-from').value='';
+  document.getElementById('rpt-to').value='';
+  renderReport();
+}
+
 function renderReport(){
   if(!isAdmin()){document.getElementById('rpt-out').innerHTML='<div class="empty">Acesso restrito.</div>';return;}
-  const totalH=sessions.reduce((s,x)=>s+x.hours,0);
+
+  const df=document.getElementById('rpt-from').value;
+  const dt=document.getElementById('rpt-to').value;
+  const rate=parseFloat(document.getElementById('rpt-rate').value)||0;
+
+  // filtra sessões pelo período
+  let rptSessions=sessions.slice();
+  if(df) rptSessions=rptSessions.filter(s=>s.date>=df);
+  if(dt) rptSessions=rptSessions.filter(s=>s.date<=dt);
+
+  const totalH=rptSessions.reduce((s,x)=>s+x.hours,0);
   const hoje=new Date().toLocaleDateString('pt-BR');
-  const first=sessions.length?new Date(sessions[0].date+'T12:00:00').toLocaleDateString('pt-BR'):'—';
-  const last=sessions.length?new Date(sessions[sessions.length-1].date+'T12:00:00').toLocaleDateString('pt-BR'):'—';
-  const grupos={c100:[],g67:[],g33:[],low:[]};
-  PRODUCTS.forEach(p=>{const pct=prodPct(p);if(pct===100)grupos.c100.push(p);else if(pct>=67)grupos.g67.push(p);else if(pct>=33)grupos.g33.push(p);else grupos.low.push(p);});
-  let txt=`RELATÓRIO DE HORAS EXTRAS — STUDYO4\nGerado: ${hoje} | Período: ${first} a ${last}\n${'─'.repeat(52)}\n\n`;
-  txt+=`RESUMO\nSessões: ${sessions.length} | Total: ${fmtHours(totalH)}\nProgresso: ${overallPct()}% | Produtos 100%: ${completedProds()}/${TOTAL_PRODS}\n\n`;
-  txt+=`POR COLABORADOR\n`;
-  activeUsers().forEach(u=>{const st=personStats(u.name);txt+=`• ${u.name}: ${st.pct}% — ${fmtHours(st.hours)} | ${st.sessions} sessões\n`;});
-  txt+=`\nPOR TAREFA\n`;TASKS.forEach(t=>{const d=taskTotal(t);txt+=`• ${t}: ${d}/${TOTAL_PRODS} (${Math.round(d/TOTAL_PRODS*100)}%)\n`;});
-  txt+=`\nSESSÕES\n`;sessions.forEach(s=>{const d=new Date(s.date+'T12:00:00').toLocaleDateString('pt-BR');const arr=s.prods||(s.prod?[s.prod]:[]);txt+=`• ${d} — ${s.person} (${fmtHours(s.hours)})${s.start?` ${s.start}→${s.end}`:''} | ${arr.join(', ')}${s.desc?' | '+s.desc:''}\n`;});
-  txt+=`\n${'─'.repeat(52)}\nStudyo4`;
+  const periodoLabel=df||dt
+    ? `${df?new Date(df+'T12:00:00').toLocaleDateString('pt-BR'):'início'} a ${dt?new Date(dt+'T12:00:00').toLocaleDateString('pt-BR'):'hoje'}`
+    : rptSessions.length
+      ? `${new Date(rptSessions[0].date+'T12:00:00').toLocaleDateString('pt-BR')} a ${new Date(rptSessions[rptSessions.length-1].date+'T12:00:00').toLocaleDateString('pt-BR')}`
+      : '—';
+
+  const sep='─'.repeat(56);
+  let txt=`RELATÓRIO DE HORAS EXTRAS — STUDYO4
+`;
+  txt+=`Gerado em: ${hoje}  |  Período: ${periodoLabel}
+${sep}
+
+`;
+
+  // RESUMO GERAL
+  txt+=`RESUMO GERAL
+`;
+  txt+=`Sessões no período : ${rptSessions.length}
+`;
+  txt+=`Total de horas     : ${fmtHours(totalH)}
+`;
+  txt+=`Progresso geral    : ${overallPct()}%
+`;
+  txt+=`Produtos 100%      : ${completedProds()}/${TOTAL_PRODS}
+`;
+  if(rate>0) txt+=`Valor/hora         : R$ ${rate.toFixed(2)}
+`;
+  txt+=`
+`;
+
+  // RESUMO DE PAGAMENTO POR COLABORADOR
+  txt+=`RESUMO POR COLABORADOR
+`;
+  const colSep='─'.repeat(56);
+  txt+=colSep+'
+';
+  activeUsers().forEach(u=>{
+    const uSess=rptSessions.filter(s=>s.person===u.name||(s.username&&s.username===u.username));
+    const uH=uSess.reduce((a,s)=>a+s.hours,0);
+    const uPag=rate>0?`  →  R$ ${(uH*rate).toFixed(2)}`:'' ;
+    const st=personStats(u.name);
+    txt+=`• ${u.name.padEnd(14)} ${fmtHours(uH).padStart(6)}  (${uSess.length} sessão(ões))${uPag}
+`;
+  });
+  if(rate>0){
+    const total=rptSessions.reduce((a,s)=>a+s.hours,0);
+    txt+=colSep+'
+';
+    txt+=`  TOTAL A PAGAR: R$ ${(total*rate).toFixed(2)}
+`;
+  }
+  txt+=`
+`;
+
+  // EVOLUÇÃO MENSAL
+  const byMonth={};
+  rptSessions.forEach(s=>{
+    const m=s.date.slice(0,7);
+    if(!byMonth[m])byMonth[m]=0;
+    byMonth[m]+=s.hours;
+  });
+  const months=Object.keys(byMonth).sort();
+  if(months.length>1){
+    txt+=`EVOLUÇÃO MENSAL
+`;
+    months.forEach(m=>{
+      const [y,mo]=m.split('-');
+      const label=new Date(y,mo-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+      const h=byMonth[m];
+      const bar='█'.repeat(Math.round(h/2));
+      txt+=`  ${label.padEnd(18)} ${fmtHours(h).padStart(6)}  ${bar}
+`;
+    });
+    txt+='
+';
+  }
+
+  // POR TAREFA
+  txt+=`PROGRESSO POR TAREFA
+`;
+  TASKS.forEach(t=>{
+    const d=taskTotal(t);
+    const pct=Math.round(d/TOTAL_PRODS*100);
+    const bar='█'.repeat(Math.round(pct/10));
+    txt+=`  ${t.padEnd(20)} ${String(d).padStart(3)}/${TOTAL_PRODS}  ${pct}%  ${bar}
+`;
+  });
+  txt+='
+';
+
+  // SESSÕES DETALHADAS
+  txt+=`SESSÕES DETALHADAS
+${colSep}
+`;
+  rptSessions.forEach(s=>{
+    const d=new Date(s.date+'T12:00:00').toLocaleDateString('pt-BR');
+    const arr=s.prods||(s.prod?[s.prod]:[]);
+    txt+=`  ${d}  ${(s.person||'').padEnd(10)}  ${fmtHours(s.hours).padStart(5)}`;
+    if(s.start&&s.end) txt+=`  (${s.start}→${s.end})`;
+    txt+=`
+`;
+    txt+=`    Produtos: ${arr.join(', ')}
+`;
+    if(s.desc) txt+=`    Obs: ${s.desc}
+`;
+  });
+
+  txt+=`
+${sep}
+© Junior Corrêa · Studyo4`;
   document.getElementById('rpt-out').innerHTML=`<div class="rpt-block">${txt}</div>`;
+
+  // renderiza gráfico mensal junto com o relatório
+  renderMonthlyChart(rptSessions);
 }
-function copyRpt(){navigator.clipboard.writeText(document.getElementById('rpt-out').innerText).then(()=>alert('Copiado!')).catch(()=>alert('Selecione e copie manualmente.'));}
+
+let monthlyChartInst=null;
+function renderMonthlyChart(rptSessions){
+  const wrap=document.getElementById('rpt-chart-wrap');
+  const canvas=document.getElementById('rpt-chart');
+  if(!wrap||!canvas) return;
+
+  const byMonth={};
+  rptSessions.forEach(s=>{
+    const m=s.date.slice(0,7);
+    if(!byMonth[m]) byMonth[m]={};
+    const uname=s.username||s.person;
+    if(!byMonth[m][uname]) byMonth[m][uname]=0;
+    byMonth[m][uname]+=s.hours;
+  });
+
+  const months=Object.keys(byMonth).sort();
+  if(months.length<1){wrap.style.display='none';return;}
+  wrap.style.display='block';
+
+  const labels=months.map(m=>{
+    const[y,mo]=m.split('-');
+    return new Date(y,mo-1,1).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'});
+  });
+
+  const palette=['#7c5cbf','#2980b9','#27ae60','#e67e22','#e74c3c','#1abc9c','#9b59b6','#f39c12'];
+  const allUsers=activeUsers();
+  const datasets=allUsers.map((u,i)=>({
+    label:u.name,
+    data:months.map(m=>{
+      const mb=byMonth[m]||{};
+      return Math.round(((mb[u.username]||0)+(mb[u.name]||0))*100)/100;
+    }),
+    backgroundColor:palette[i%palette.length],
+    borderRadius:4,
+  })).filter(ds=>ds.data.some(v=>v>0));
+
+  if(monthlyChartInst) monthlyChartInst.destroy();
+  monthlyChartInst=new Chart(canvas,{
+    type:'bar',
+    data:{labels,datasets},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:true,position:'bottom',labels:{font:{size:11},boxWidth:12,padding:8}},
+        title:{display:true,text:'Horas por mês',font:{size:13},padding:{bottom:10}},
+        tooltip:{callbacks:{label:i=>`${i.dataset.label}: ${fmtHours(i.raw)}`}}
+      },
+      scales:{
+        x:{stacked:true},
+        y:{stacked:true,beginAtZero:true,ticks:{callback:v=>v===0?'0':fmtHours(v)}}
+      }
+    }
+  });
+}
+
+function copyRpt(){
+  navigator.clipboard.writeText(document.getElementById('rpt-out').innerText)
+    .then(()=>alert('Relatório copiado!'))
+    .catch(()=>alert('Selecione o texto e copie manualmente.'));
+}
+
+function printRpt(){
+  const content=document.getElementById('rpt-out').innerText;
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Relatório Studyo4</title>
+  <style>body{font-family:'Courier New',monospace;font-size:12px;padding:2rem;white-space:pre-wrap;line-height:1.7}
+  @media print{body{padding:1rem}}</style></head>
+  <body>${content}</body></html>`);
+  w.document.close();
+  setTimeout(()=>w.print(),400);
+}
 
 // ══════════════════════════════════════════════════════
 // POR COLABORADOR
@@ -1719,7 +1953,21 @@ async function rejectPending(i){if(!confirm(`Recusar ${pendingUsers[i].name}?`))
 // ══════════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════════
-function renderAll(){if(!currentUser)return;renderVisao();}
+function renderAll(){
+  if(!currentUser)return;
+  // pré-preenche período do relatório com mês atual
+  const now=new Date();
+  const y=now.getFullYear();
+  const m=String(now.getMonth()+1).padStart(2,'0');
+  const from=document.getElementById('rpt-from');
+  const to=document.getElementById('rpt-to');
+  if(from&&!from.value) from.value=`${y}-${m}-01`;
+  if(to&&!to.value){
+    const lastDay=new Date(y,now.getMonth()+1,0).getDate();
+    to.value=`${y}-${m}-${String(lastDay).padStart(2,'0')}`;
+  }
+  renderVisao();
+}
 
 window.addEventListener('load', async ()=>{
   showLoading('Conectando ao banco de dados...');
