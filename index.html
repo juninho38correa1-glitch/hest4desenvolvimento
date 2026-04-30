@@ -248,7 +248,7 @@ tr:hover td{background:var(--surface2)}
 <body>
 
 <!-- LOADING -->
-<div id="loading-overlay" class="loading-overlay">
+<div id="loading-overlay" class="loading-overlay" style="display:none">
   <div class="spinner"></div>
   <div class="loading-txt" id="loading-txt">Conectando ao banco de dados...</div>
 </div>
@@ -646,22 +646,7 @@ async function sbSetSessions(data){
   await sbSet('sessions', data);
 }
 
-// FIX 2: dados globais separados de sessões
-async function loadGlobalData(){
-  const [c, td, o, u, p] = await Promise.all([
-    sbGet('checks'), sbGet('taskDates'),
-    sbGet('obs'), sbGet('users'), sbGet('pendingUsers')
-  ]);
-  if(c)  checks       = c;
-  if(td) taskDates    = td;
-  if(o)  obs          = o;
-  if(u)  users        = u;
-  if(p)  pendingUsers = p;
-}
-
 async function loadAllFromSupabase(){
-  await loadGlobalData();
-  // sessões só carregam se já tiver currentUser definido
   if(currentUser) await loadSessions();
 }
 
