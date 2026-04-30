@@ -383,11 +383,12 @@ tr:hover td{background:var(--surface2)}
       <div class="card">
         <div class="sel-row" id="hist-filter-row" style="flex-wrap:wrap;gap:10px;align-items:flex-end">
           <div class="fg"><label>Filtrar pessoa</label>
-            <select id="h-filter" onchange="renderHistory();renderChart()"><option value="">Todas</option></select>
+            <select id="h-filter" onchange="renderHistory().then(()=>renderChart())"><option value="">Todas</option></select>
           </div>
-          <div class="fg"><label>De</label><input type="date" id="h-date-from" onchange="renderHistory();renderChart()"></div>
-          <div class="fg"><label>Até</label><input type="date" id="h-date-to" onchange="renderHistory();renderChart()"></div>
+          <div class="fg"><label>De</label><input type="date" id="h-date-from" onchange="renderHistory().then(()=>renderChart())"></div>
+          <div class="fg"><label>Até</label><input type="date" id="h-date-to" onchange="renderHistory().then(()=>renderChart())"></div>
           <button class="btn btn-sm" onclick="clearHistFilter()" style="align-self:flex-end">Limpar filtros</button>
+          <button class="btn btn-sm btn-p" onclick="renderHistory().then(()=>renderChart())" style="align-self:flex-end">↻ Atualizar</button>
           <div id="hist-total" style="align-self:flex-end;font-size:12px;color:var(--text2);font-family:Arial,sans-serif"></div>
         </div>
         <div id="hist-tbl"><div class="empty">Nenhuma sessão registrada.</div></div>
@@ -1093,7 +1094,7 @@ function sw(t){
   if(t==='visao')renderVisao();
   if(t==='tabela'){renderTable();renderMetrics();}
   if(t==='sessao'){renderProdList();renderChips();renderTaskChecks();renderMetrics();}
-  if(t==='historico'){renderHistory();renderChart();}
+  if(t==='historico'){renderHistory().then(()=>renderChart());}
   if(t==='relatorio'){renderReport();renderMetrics();}
   if(t==='colaborador'){activeCollab=activeCollab||(activeUsers()[0]?.name);renderCollabTabs();renderMetrics();}
   if(t==='admin')renderAdmin();
@@ -1349,10 +1350,19 @@ function clearHistFilter(){
   renderHistory();renderChart();
 }
 
-function renderHistory(){
+async function renderHistory(){
   const fp=document.getElementById('h-filter').value;
   const dateFrom=document.getElementById('h-date-from')?.value||'';
   const dateTo=document.getElementById('h-date-to')?.value||'';
+
+  // admin sempre recarrega sessões do banco ao abrir histórico
+  if(isAdmin()){
+    setSyncing('saving');
+    document.getElementById('sync-txt').textContent='Atualizando...';
+    try{ await loadSessions(); setSyncing('ok'); }
+    catch(e){ setSyncing('err'); }
+  }
+
   renderMetrics(fp||null);
   const base=visibleSessions();
   let indices=base.map((_,i)=>sessions.indexOf(base[i]));
