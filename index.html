@@ -614,8 +614,8 @@ async function sbSetSessions(data){
   await sbSet('sessions', data);
 }
 
-async function loadAllFromSupabase(){
-  // carrega dados globais (checks, users, etc.)
+// FIX 2: dados globais separados de sessões
+async function loadGlobalData(){
   const [c, td, o, u, p] = await Promise.all([
     sbGet('checks'), sbGet('taskDates'),
     sbGet('obs'), sbGet('users'), sbGet('pendingUsers')
@@ -625,9 +625,12 @@ async function loadAllFromSupabase(){
   if(o)  obs          = o;
   if(u)  users        = u;
   if(p)  pendingUsers = p;
+}
 
-  // carrega sessões: admin busca de todos, funcionário só a sua
-  await loadSessions();
+async function loadAllFromSupabase(){
+  await loadGlobalData();
+  // sessões só carregam se já tiver currentUser definido
+  if(currentUser) await loadSessions();
 }
 
 async function loadSessions(){
@@ -667,11 +670,17 @@ async function saveSessionsOnly(){
 
 // salva sessões de um usuário específico (usado pelo admin ao editar/deletar)
 async function saveSessionsFor(username){
-  const userSessions = sessions.filter(s=>
-    s.username===username ||
-    (!s.username && s.person===(users.find(u=>u.username===username)?.name))
-  );
-  await sbSet('sessions_'+username, userSessions);
+  setSyncing('saving');
+  try{
+    const userSessions = sessions.filter(s=>
+      s.username===username ||
+      (!s.username && s.person===(users.find(u=>u.username===username)?.name))
+    );
+    // garante que todas têm o username
+    userSessions.forEach(s=>{ if(!s.username) s.username=username; });
+    await sbSet('sessions_'+username, userSessions);
+    setSyncing('ok');
+  }catch(e){ setSyncing('err'); throw e; }
 }
 
 async function saveAllToSupabase(){
@@ -933,7 +942,7 @@ function doRegister(){
   ['reg-name','reg-username','reg-pass','reg-pass2'].forEach(id=>document.getElementById(id).value='');
 }
 
-function loginSuccess(user){
+async function loginSuccess(user){
   currentUser=user;
   // salva sessão ativa — persiste no F5, some ao fechar o navegador
   sessionStorage.setItem('s04_session', JSON.stringify({username:user.username}));
@@ -964,9 +973,16 @@ function loginSuccess(user){
   if(bnAdmin) bnAdmin.style.display=isAdmin()?'flex':'none';
   // sempre começa na visão geral
   sw('visao');
-  // recarrega dados frescos do Supabase
-  showLoading('Carregando dados...');
-  loadAllFromSupabase().then(()=>{hideLoading();renderAll();}).catch(()=>{hideLoading();renderAll();});
+  // FIX 3: carrega só sessões (dados globais já foram carregados no window.load)
+  showLoading('Carregando sessões...');
+  try{
+    await loadSessions();
+    hideLoading();
+    renderAll();
+  }catch(e){
+    hideLoading();
+    renderAll();
+  }
 }
 
 function doLogout(){
@@ -1065,7 +1081,8 @@ function sw(t){
 // ══════════════════════════════════════════════════════
 function renderMetrics(fp){
   const base=visibleSessions();
-  const filtered=fp?base.filter(s=>s.person===fp):base;
+  const fpUser=fp?users.find(u=>u.name===fp):null;
+  const filtered=fp?base.filter(s=>s.person===fp||(fpUser&&s.username===fpUser.username)):base;
   const h=filtered.reduce((s,x)=>s+x.hours,0);
   document.getElementById('m-h').textContent=fmtHours(h);
   document.getElementById('m-s').textContent=filtered.length;
@@ -1311,7 +1328,7 @@ function renderHistory(){
     const prodsArr=s.prods||(s.prod?[s.prod]:[]);
     const prodsLabel=prodsArr.length===1?prodsArr[0]:`${prodsArr.length} produtos`;
     const timeLabel=s.start&&s.end?`${s.start}–${s.end} `:'';
-    const canEdit=isAdmin()||s.person===currentUser?.name;
+    const canEdit=isAdmin()||(s.username&&s.username===currentUser?.username)||(s.person===currentUser?.name);
     return`<tr style="cursor:pointer" onclick="openDetailModal(${ri})">
       <td style="width:85px;white-space:nowrap">${d}</td>
       <td style="width:110px"><span class="pill" style="background:${pcfg3.bg};color:${pcfg3.tc}">${nomePessoa}</span></td>
@@ -1709,20 +1726,17 @@ window.addEventListener('load', async ()=>{
   try{
     document.getElementById('db-status').textContent='● Conectando...';
     document.getElementById('db-status').className='db-status';
-    await loadAllFromSupabase();
+    // FIX 1: carrega só dados globais (sem sessões — precisam de currentUser)
+    await loadGlobalData();
     document.getElementById('db-status').textContent='● Banco conectado';
     document.getElementById('db-status').className='db-status ok';
-
     // tenta restaurar sessão ativa (persiste no F5)
     const saved = sessionStorage.getItem('s04_session');
     if(saved){
       try{
         const {username} = JSON.parse(saved);
         const user = users.find(u=>u.username===username&&u.active);
-        if(user){
-          loginSuccess(user);
-          return; // já logou, não mostra tela de login
-        }
+        if(user){ await loginSuccess(user); return; }
       }catch(e){ sessionStorage.removeItem('s04_session'); }
     }
     showLogin();
@@ -1730,13 +1744,12 @@ window.addEventListener('load', async ()=>{
     console.error('Supabase connection error:', e);
     document.getElementById('db-status').textContent='⚠️ Sem conexão com o banco';
     document.getElementById('db-status').className='db-status err';
-    // mesmo sem banco, tenta restaurar sessão pelo usuário local
     const saved = sessionStorage.getItem('s04_session');
     if(saved){
       try{
         const {username} = JSON.parse(saved);
         const user = users.find(u=>u.username===username&&u.active);
-        if(user){loginSuccess(user);return;}
+        if(user){ await loginSuccess(user); return; }
       }catch(e2){}
     }
     showLogin();
