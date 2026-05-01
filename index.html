@@ -430,6 +430,18 @@ tr:hover td{background:var(--surface2)}
       <div class="card" style="max-width:480px">
         <div class="card-ttl">Minha conta</div>
         <div id="conta-info" style="margin-bottom:1.25rem;font-family:Arial,sans-serif;font-size:13px;color:var(--text2)"></div>
+        <div id="conta-he-preview" style="margin-bottom:1.25rem"></div>
+        <div style="border-top:1px solid var(--border);padding-top:1rem;margin-bottom:1rem">
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;font-family:Arial,sans-serif">Meu salário</div>
+          <div id="conta-sal-err" class="login-err err-red"></div>
+          <div id="conta-sal-ok" class="login-err err-green"></div>
+          <div class="form-row" style="grid-template-columns:1fr 1fr">
+            <div class="fg"><label>Salário mensal (R$)</label><input type="number" id="conta-salario" placeholder="2200.00" step="0.01" min="0"></div>
+            <div class="fg"><label>Carga horária mensal (h)</label><input type="number" id="conta-carga" placeholder="220" step="1" min="1"></div>
+          </div>
+          <div style="font-size:11px;color:var(--text3);font-family:Arial,sans-serif;margin-bottom:8px">Usado para calcular a previsão de pagamento das suas horas extras.</div>
+          <button class="btn btn-p" onclick="saveSalario()">Salvar salário</button>
+        </div>
         <div style="border-top:1px solid var(--border);padding-top:1rem">
           <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;font-family:Arial,sans-serif">Alterar senha</div>
           <div id="conta-err" class="login-err err-red"></div>
@@ -523,6 +535,8 @@ tr:hover td{background:var(--surface2)}
           <option value="amber">Âmbar</option>
         </select>
       </div>
+      <div class="fg"><label>Salário mensal (R$)</label><input type="number" id="edit-user-salario" placeholder="2200.00" step="0.01" min="0"></div>
+      <div class="fg"><label>Carga horária mensal (h)</label><input type="number" id="edit-user-carga" placeholder="220" step="1" min="1" value="220"></div>
     </div>
     <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px">
       <button class="btn" onclick="closeModal('edit-user-overlay')">Cancelar</button>
@@ -1758,12 +1772,45 @@ function renderCollabContent(){
   );
   if(!mySessions.length){el.innerHTML=`<div class="empty">Nenhuma sessão para ${activeCollab}.</div>`;return;}
   const st=personStats(activeCollab);const bc=barColor(st.pct);
+  // cálculo HE do colaborador
+  const uObj=users.find(x=>x.name===activeCollab);
+  const heCalc=uObj?calcHE(mySessions,uObj):null;
+  const now=new Date();const mesAtual=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const sessoesMes=mySessions.filter(s=>s.date.startsWith(mesAtual));
+  const heCalcMes=uObj?calcHE(sessoesMes,uObj):null;
+
   let html=`<div style="display:flex;gap:12px;margin-bottom:1rem;flex-wrap:wrap">
     <div class="mc" style="flex:1;min-width:110px"><div class="mc-lbl">Horas extras</div><div class="mc-val">${fmtHours(st.hours)}</div></div>
     <div class="mc" style="flex:1;min-width:110px"><div class="mc-lbl">Sessões</div><div class="mc-val">${st.sessions}</div></div>
     <div class="mc" style="flex:1;min-width:110px"><div class="mc-lbl">Produtos</div><div class="mc-val">${st.prodsCount}</div></div>
     <div class="mc" style="flex:1;min-width:110px"><div class="mc-lbl">Progresso</div><div class="mc-val" style="color:${bc}">${st.pct}%</div><div class="mc-sub">${st.done}/${st.total} tarefas</div></div>
   </div>`;
+
+  // bloco de previsão de pagamento
+  if(heCalc){
+    html+=`<div style="background:var(--green-bg);border:1px solid #b7e4c7;border-radius:var(--radius);padding:1rem 1.25rem;margin-bottom:1rem;font-family:Arial,sans-serif">
+      <div style="font-size:11px;font-weight:600;color:var(--green);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">💰 Previsão de pagamento HE</div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px">
+        <div><div style="font-size:11px;color:var(--green);margin-bottom:2px">Mês atual</div>
+          <div style="font-size:22px;font-weight:700;color:var(--green)">${heCalcMes?fmtReais(heCalcMes.totalReais):'R$ 0,00'}</div>
+          <div style="font-size:11px;color:var(--green)">${heCalcMes?fmtHours(heCalcMes.totalHoras):'0h'} de HE</div>
+        </div>
+        <div><div style="font-size:11px;color:var(--green);margin-bottom:2px">Total acumulado</div>
+          <div style="font-size:22px;font-weight:700;color:var(--green)">${fmtReais(heCalc.totalReais)}</div>
+          <div style="font-size:11px;color:var(--green)">${fmtHours(heCalc.totalHoras)} de HE</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--green);line-height:1.8;border-top:1px solid #b7e4c7;padding-top:8px">
+        <div>Salário: ${fmtReais(heCalc.salario)} ÷ ${heCalc.cargaH}h = ${fmtReais(heCalc.valorHora)}/hora</div>
+        ${heCalc.total50>0?`<div>⏱ ${fmtHours(heCalc.total50)} a +50% = ${fmtReais(heCalc.total50*heCalc.valorHora*1.5)}</div>`:''}
+        ${heCalc.total100>0?`<div>⏱ ${fmtHours(heCalc.total100)} a +100% = ${fmtReais(heCalc.total100*heCalc.valorHora*2)}</div>`:''}
+      </div>
+    </div>`;
+  } else {
+    html+=`<div style="font-size:12px;color:var(--text3);font-family:Arial,sans-serif;background:var(--surface2);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:1rem">
+      💡 Configure o salário de ${activeCollab} no painel de usuários para ver a previsão de pagamento.
+    </div>`;
+  }
   const byDate={};mySessions.forEach(s=>{if(!byDate[s.date])byDate[s.date]=[];byDate[s.date].push(s);});
   Object.keys(byDate).sort().reverse().forEach(date=>{
     const d=new Date(date+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});
@@ -1808,6 +1855,10 @@ function renderAdmin(){
       <div style="display:flex;align-items:center;gap:6px;font-family:Arial,sans-serif;font-size:12px;background:var(--surface2);padding:3px 10px;border-radius:var(--radius-sm);border:1px solid var(--border)">
         🔑 <span id="pass-display-${i}" style="letter-spacing:.05em">${'•'.repeat(senhaLegivel.length)}</span>
         <button onclick="togglePassView(${i},'${senhaLegivel.replace(/'/g,"\\'")}',this)" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--blue);font-family:Arial,sans-serif">ver</button>
+      </div>
+      <div style="font-size:11px;font-family:Arial,sans-serif;color:var(--text2);background:var(--green-bg);color:var(--green);padding:3px 10px;border-radius:var(--radius-sm)">
+        💰 ${u.salario?'R$ '+parseFloat(u.salario).toLocaleString('pt-BR',{minimumFractionDigits:2}):'sem salário'}
+        ${u.salario?'· '+fmtHours(calcHE(sessions.filter(s=>s.username===u.username||s.person===u.name),u)?.totalHoras||0)+' HE este mês':''}
       </div>
       <button class="btn btn-sm" onclick="openResetPass(${i})">🔒 Redefinir</button>
       <button class="btn btn-sm" onclick="openEditUser(${i})">✏️ Editar</button>
@@ -1869,6 +1920,8 @@ function openEditUser(i){
   document.getElementById('edit-user-login').value=u.username;
   document.getElementById('edit-user-role').value=u.role||'user';
   document.getElementById('edit-user-color').value=u.color||'';
+  document.getElementById('edit-user-salario').value=u.salario||'';
+  document.getElementById('edit-user-carga').value=u.cargaHoras||'220';
   document.getElementById('edit-user-err').style.display='none';
   document.getElementById('edit-user-ok').style.display='none';
   document.getElementById('edit-user-overlay').classList.add('open');
@@ -1878,6 +1931,8 @@ async function saveEditUser(){
   const name=document.getElementById('edit-user-name').value.trim();
   const role=document.getElementById('edit-user-role').value;
   const color=document.getElementById('edit-user-color').value;
+  const salario=document.getElementById('edit-user-salario').value;
+  const cargaHoras=document.getElementById('edit-user-carga').value||'220';
   const err=document.getElementById('edit-user-err');const ok=document.getElementById('edit-user-ok');
   err.style.display='none';ok.style.display='none';
   if(!name){err.style.display='block';err.textContent='Nome não pode ser vazio.';return;}
@@ -1888,6 +1943,8 @@ async function saveEditUser(){
   users[editUserIndex].name=name;
   users[editUserIndex].role=role;
   users[editUserIndex].color=color;
+  users[editUserIndex].salario=salario;
+  users[editUserIndex].cargaHoras=cargaHoras;
 
   // migra sessões antigas que não têm username: amarra pelo nome antigo
   let migrated=0;
@@ -1914,6 +1971,83 @@ async function saveEditUser(){
   }
   if(currentUser?.username===uname) currentUser.name=name;
 }
+
+// ══════════════════════════════════════════════════════
+// CÁLCULO DE HE — SALÁRIO E FERIADOS
+// ══════════════════════════════════════════════════════
+
+// Feriados nacionais fixos (dd/mm) + móveis 2025-2027
+const FERIADOS = new Set([
+  // Fixos
+  '01/01','21/04','01/05','07/09','12/10','02/11','15/11','20/11','25/12',
+  // Móveis 2025
+  '03/03/2025','04/03/2025','18/04/2025','19/04/2025','19/06/2025',
+  // Móveis 2026
+  '16/02/2026','17/02/2026','03/04/2026','04/04/2026','11/06/2026',
+  // Móveis 2027
+  '08/02/2027','09/02/2027','26/03/2027','27/03/2027','03/06/2027',
+]);
+
+function isFeriado(dateStr){
+  // dateStr = '2026-04-03'
+  const [y,m,d] = dateStr.split('-');
+  const ddmm = `${d}/${m}`;
+  const ddmmyyyy = `${d}/${m}/${y}`;
+  return FERIADOS.has(ddmm) || FERIADOS.has(ddmmyyyy);
+}
+
+// Retorna o fator de adicional de HE para uma sessão
+// 1.5 = 50% (dia útil), 2.0 = 100% (domingo, feriado, sáb após 12h)
+function fatorHE(session){
+  const d = new Date(session.date + 'T12:00:00');
+  const dow = d.getDay(); // 0=dom, 6=sab
+
+  if(dow === 0) return 2.0; // domingo
+  if(isFeriado(session.date)) return 2.0; // feriado
+  if(dow === 6){
+    // sábado: antes do meio dia = 50%, após = 100%
+    const [sh] = (session.start||'00:00').split(':').map(Number);
+    return sh >= 12 ? 2.0 : 1.5;
+  }
+  return 1.5; // dia útil
+}
+
+function labelFator(f){
+  return f >= 2.0 ? '100% (dom/fer/sáb tarde)' : '50% (dia útil)';
+}
+
+// Cálculo correto de horas decimais para reais
+// 1h30 = 1.5h decimal. Valor = 1.5 × valorHora
+// (sem confundir com centesimal onde 1,30 seria diferente)
+function calcHE(sessions, usuario){
+  const salario  = parseFloat(usuario.salario)||0;
+  const cargaH   = parseFloat(usuario.cargaHoras)||220;
+  if(!salario || !cargaH) return null;
+
+  const valorHora = salario / cargaH;
+  let total50 = 0, total100 = 0, totalReais = 0;
+
+  sessions.forEach(s=>{
+    const f = fatorHE(s);
+    const adicional = f - 1; // 0.5 ou 1.0
+    const valor = s.hours * valorHora * (1 + adicional);
+    totalReais += valor;
+    if(f >= 2.0) total100 += s.hours;
+    else          total50  += s.hours;
+  });
+
+  return {
+    salario, cargaH, valorHora,
+    total50, total100,
+    totalHoras: total50 + total100,
+    totalReais,
+  };
+}
+
+function fmtReais(v){
+  return 'R$ '+v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+}
+
 // ══════════════════════════════════════════════════════
 function renderConta(){
   if(!currentUser)return;
@@ -1926,8 +2060,82 @@ function renderConta(){
         <div style="color:var(--text3)">@${currentUser.username} · ${currentUser.role==='admin'?'Administrador':'Funcionário'}</div>
       </div>
     </div>`;
+  // previsão de HE do funcionário
+  const u = users.find(x=>x.username===currentUser.username);
+  const contaHE = document.getElementById('conta-he-preview');
+  if(contaHE && u){
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth()+1).padStart(2,'0');
+    const mesAtual = `${y}-${m}`;
+    const sessoesMes = sessions.filter(s=>
+      (s.username===currentUser.username||s.person===currentUser.name) &&
+      s.date.startsWith(mesAtual)
+    );
+    const sessoesTotal = sessions.filter(s=>
+      s.username===currentUser.username||s.person===currentUser.name
+    );
+    const heMes   = calcHE(sessoesMes,  u);
+    const heTotal = calcHE(sessoesTotal, u);
+
+    if(!u.salario){
+      contaHE.innerHTML = '<div style="font-size:12px;color:var(--text3);font-family:Arial,sans-serif;padding:10px 0">Salário não configurado. Peça ao administrador para configurar.</div>';
+    } else {
+      const mesLabel = new Date(y, now.getMonth(), 1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+      contaHE.innerHTML = `
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;font-family:Arial,sans-serif">Previsão de recebimento</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <div class="mc" style="padding:12px">
+            <div class="mc-lbl">${mesLabel}</div>
+            <div class="mc-val" style="font-size:20px;color:var(--green)">${heMes?fmtReais(heMes.totalReais):'R$ 0,00'}</div>
+            <div class="mc-sub">${heMes?fmtHours(heMes.totalHoras):0} horas extras</div>
+          </div>
+          <div class="mc" style="padding:12px">
+            <div class="mc-lbl">Total acumulado</div>
+            <div class="mc-val" style="font-size:20px;color:var(--blue)">${heTotal?fmtReais(heTotal.totalReais):'R$ 0,00'}</div>
+            <div class="mc-sub">${heTotal?fmtHours(heTotal.totalHoras):0} horas extras</div>
+          </div>
+        </div>
+        ${heMes&&(heMes.total50>0||heMes.total100>0)?`
+        <div style="font-size:11px;color:var(--text3);font-family:Arial,sans-serif;background:var(--surface2);border-radius:var(--radius-sm);padding:10px 12px;line-height:1.8">
+          <div>💼 Valor/hora: ${fmtReais(heMes.valorHora)} (salário ${fmtReais(heMes.salario)} ÷ ${heMes.cargaH}h)</div>
+          ${heMes.total50>0?`<div>⏱ ${fmtHours(heMes.total50)} a 50% adicional = ${fmtReais(heMes.total50*heMes.valorHora*1.5)}</div>`:''}
+          ${heMes.total100>0?`<div>⏱ ${fmtHours(heMes.total100)} a 100% adicional = ${fmtReais(heMes.total100*heMes.valorHora*2)}</div>`:''}
+        </div>`:''}`;
+    }
+  }
+  // preenche campos de salário com os valores atuais
+  const uAtual = users.find(x=>x.username===currentUser.username);
+  if(uAtual){
+    document.getElementById('conta-salario').value = uAtual.salario||'';
+    document.getElementById('conta-carga').value   = uAtual.cargaHoras||'220';
+  }
+  ['conta-sal-err','conta-sal-ok'].forEach(id=>{document.getElementById(id).style.display='none';});
   ['conta-err','conta-ok'].forEach(id=>{document.getElementById(id).style.display='none';});
   ['conta-pass-atual','conta-pass-nova','conta-pass-nova2'].forEach(id=>{document.getElementById(id).value='';});
+}
+
+async function saveSalario(){
+  const salario  = document.getElementById('conta-salario').value;
+  const cargaHoras = document.getElementById('conta-carga').value||'220';
+  const err = document.getElementById('conta-sal-err');
+  const ok  = document.getElementById('conta-sal-ok');
+  err.style.display='none'; ok.style.display='none';
+  if(!salario||parseFloat(salario)<=0){
+    err.style.display='block';err.textContent='Digite um salário válido.';return;
+  }
+  const idx = users.findIndex(u=>u.username===currentUser.username);
+  if(idx>=0){
+    users[idx].salario    = salario;
+    users[idx].cargaHoras = cargaHoras;
+    currentUser.salario    = salario;
+    currentUser.cargaHoras = cargaHoras;
+  }
+  await saveUsersOnly();
+  ok.style.display='block';
+  ok.textContent='✓ Salário salvo!';
+  // atualiza previsão na tela
+  renderConta();
 }
 
 async function changePassword(){
