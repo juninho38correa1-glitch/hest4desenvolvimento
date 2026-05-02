@@ -175,8 +175,8 @@ tr:hover td{background:var(--surface2)}
   /* tabs viram bottom nav — esconde tabs normais */
   .tabs{display:none}
 
-  /* métricas: 3+2 no mobile */
-  .metrics{grid-template-columns:repeat(2,1fr) !important;gap:8px;margin-bottom:1rem}
+  /* métricas: 2 por linha no mobile */
+  .metrics{grid-template-columns:repeat(2,1fr) !important;gap:8px;margin-bottom:1rem} .mc-val{font-size:18px}
   .mc{padding:10px 12px}
   .mc-val{font-size:20px}
 
@@ -304,9 +304,10 @@ tr:hover td{background:var(--surface2)}
   </div>
 
   <div class="container">
-    <div class="metrics" style="grid-template-columns:repeat(5,1fr)">
-      <div class="mc"><div class="mc-lbl" id="m-h-lbl">Total de horas</div><div class="mc-val" id="m-h">–</div><div class="mc-sub" id="m-h-sub">em horas extras</div></div>
-      <div class="mc"><div class="mc-lbl" id="m-mes-lbl">Este mês</div><div class="mc-val" id="m-mes">–</div><div class="mc-sub" id="m-mes-sub">horas no mês atual</div></div>
+    <div class="metrics" style="grid-template-columns:repeat(6,1fr)">
+      <div class="mc"><div class="mc-lbl" id="m-h-lbl">Total geral</div><div class="mc-val" id="m-h">–</div><div class="mc-sub" id="m-h-sub">acumulado</div></div>
+      <div class="mc"><div class="mc-lbl" id="m-ult-lbl">Último mês</div><div class="mc-val" id="m-ult">–</div><div class="mc-sub" id="m-ult-sub">horas extras</div></div>
+      <div class="mc"><div class="mc-lbl" id="m-mes-lbl">Mês atual</div><div class="mc-val" id="m-mes">–</div><div class="mc-sub" id="m-mes-sub">horas extras</div></div>
       <div class="mc"><div class="mc-lbl" id="m-s-lbl">Sessões</div><div class="mc-val" id="m-s">–</div><div class="mc-sub" id="m-s-sub">registradas</div></div>
       <div class="mc"><div class="mc-lbl">Progresso geral</div><div class="mc-val" id="m-t">–</div><div class="mc-sub">de todas as tarefas</div></div>
       <div class="mc"><div class="mc-lbl">Produtos 100%</div><div class="mc-val" id="m-p">–</div><div class="mc-sub">concluídos</div></div>
@@ -1125,13 +1126,22 @@ function renderMetrics(fp){
   const filtered=fp?base.filter(s=>s.person===fp||(fpUser&&s.username===fpUser.username)):base;
   const h=filtered.reduce((s,x)=>s+x.hours,0);
 
-  // horas do mês atual
   const now=new Date();
+  // mês atual
   const mesAtual=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  const hMes=filtered.filter(s=>s.date&&s.date.startsWith(mesAtual)).reduce((a,s)=>a+s.hours,0);
   const mesLabel=now.toLocaleDateString('pt-BR',{month:'long'});
+  const hMes=filtered.filter(s=>s.date&&s.date.startsWith(mesAtual)).reduce((a,s)=>a+s.hours,0);
+  // último mês (mês anterior)
+  const dUlt=new Date(now.getFullYear(),now.getMonth()-1,1);
+  const mesUlt=`${dUlt.getFullYear()}-${String(dUlt.getMonth()+1).padStart(2,'0')}`;
+  const mesUltLabel=dUlt.toLocaleDateString('pt-BR',{month:'long'});
+  const hUlt=filtered.filter(s=>s.date&&s.date.startsWith(mesUlt)).reduce((a,s)=>a+s.hours,0);
 
   document.getElementById('m-h').textContent=fmtHours(h);
+  if(document.getElementById('m-ult')){
+    document.getElementById('m-ult').textContent=fmtHours(hUlt);
+    document.getElementById('m-ult-sub').textContent=mesUltLabel;
+  }
   document.getElementById('m-mes').textContent=fmtHours(hMes);
   document.getElementById('m-mes-sub').textContent=mesLabel;
   document.getElementById('m-s').textContent=filtered.length;
@@ -1141,19 +1151,20 @@ function renderMetrics(fp){
   if(fp){
     const pcfg=userCfg(fp);const color=pcfg?pcfg.tc:'var(--text)';
     document.getElementById('m-h-lbl').innerHTML=`Horas de <span style="color:${color};font-weight:700">${fp}</span>`;
-    document.getElementById('m-h-sub').textContent='total acumulado';
-    document.getElementById('m-mes-lbl').innerHTML=`<span style="color:${color};font-weight:700">${fp}</span> — mês`;
+    document.getElementById('m-h-sub').textContent='acumulado';
+    if(document.getElementById('m-ult-lbl')) document.getElementById('m-ult-lbl').textContent='Último mês';
+    document.getElementById('m-mes-lbl').textContent='Mês atual';
     document.getElementById('m-s-lbl').innerHTML=`Sessões de <span style="color:${color};font-weight:700">${fp}</span>`;
     document.getElementById('m-s-sub').textContent='registradas';
   }else{
-    document.getElementById('m-h-lbl').textContent=isAdmin()?'Total de horas':'Minhas horas';
-    document.getElementById('m-h-sub').textContent='acumulado total';
-    document.getElementById('m-mes-lbl').textContent=isAdmin()?'Total este mês':'Meu mês';
+    document.getElementById('m-h-lbl').textContent=isAdmin()?'Total geral':'Minhas horas';
+    document.getElementById('m-h-sub').textContent='acumulado';
+    if(document.getElementById('m-ult-lbl')) document.getElementById('m-ult-lbl').textContent='Último mês';
+    document.getElementById('m-mes-lbl').textContent='Mês atual';
     document.getElementById('m-s-lbl').textContent=isAdmin()?'Sessões realizadas':'Minhas sessões';
     document.getElementById('m-s-sub').textContent='registradas';
   }
 }
-
 // ══════════════════════════════════════════════════════
 // VISÃO GERAL
 // ══════════════════════════════════════════════════════
@@ -1184,7 +1195,7 @@ function renderVisao(){
 // TABELA
 // ══════════════════════════════════════════════════════
 function badgeHtml(prod,task,val){
-  if(val===true){const date=taskDates[prod]&&taskDates[prod][task]?fmtDate(taskDates[prod][task]):'importado';return`<div class="tt-wrap"><span class="ok-b">OK</span><span class="tt">✓ ${date}</span></div>`;}
+  if(val===true){const date=taskDates[prod]&&taskDates[prod][task]?fmtDate(taskDates[prod][task]):'importado';const who=taskDates[prod]?._who?.[task]||'';return`<div class="tt-wrap"><span class="ok-b">OK</span><span class="tt">✓ ${date}${who?' · '+who:''}</span></div>`;}
   if(val==='nv')return`<div class="tt-wrap"><span class="nv-b">N/A</span><span class="tt">Não se aplica</span></div>`;
   return`<span class="no-b">—</span>`;
 }
@@ -1226,7 +1237,7 @@ function openDrawer(prod){
         <input type="checkbox" ${isDone?'checked':''} ${canEdit?`onchange="toggleFromDrawer('${esc(prod)}','${t}',this.checked)"`:'onclick="return false"'} style="accent-color:#2d6a4f">
         ${t}
       </label>
-      <span class="drawer-task-date">${isDone?date:'pendente'}</span>
+      <span class="drawer-task-date">${isDone?(date+(taskDates[prod]?._who?.[t]?' · '+taskDates[prod]._who[t]:'')):'pendente'}</span>
     </div>`;
   }).join('');
   document.getElementById('drawer').classList.add('open');
@@ -1241,8 +1252,18 @@ function toggleFromDrawer(prod,task,val){
   if(!isAdmin())return;
   if(!checks[prod])checks[prod]={};
   checks[prod][task]=val;
-  if(val){if(!taskDates[prod])taskDates[prod]={};taskDates[prod][task]=new Date().toISOString().slice(0,10);}
-  else{if(taskDates[prod])delete taskDates[prod][task];}
+  if(val){
+    if(!taskDates[prod])taskDates[prod]={};
+    taskDates[prod][task]=new Date().toISOString().slice(0,10);
+    // registra quem ticou
+    if(!taskDates[prod]._who) taskDates[prod]._who={};
+    taskDates[prod]._who[task]=currentUser?.name||'Admin';
+  }else{
+    if(taskDates[prod]){
+      delete taskDates[prod][task];
+      if(taskDates[prod]._who) delete taskDates[prod]._who[task];
+    }
+  }
   debouncedSaveChecks();renderMetrics();openDrawer(prod);renderTable();
 }
 function saveObs(){
@@ -1305,8 +1326,17 @@ function renderTaskChecks(){
 function toggleTask(prod,task,val){
   if(!checks[prod])checks[prod]={};
   checks[prod][task]=val;
-  if(val){if(!taskDates[prod])taskDates[prod]={};taskDates[prod][task]=new Date().toISOString().slice(0,10);}
-  else{if(taskDates[prod])delete taskDates[prod][task];}
+  if(val){
+    if(!taskDates[prod])taskDates[prod]={};
+    taskDates[prod][task]=new Date().toISOString().slice(0,10);
+    if(!taskDates[prod]._who) taskDates[prod]._who={};
+    taskDates[prod]._who[task]=currentUser?.name||'–';
+  }else{
+    if(taskDates[prod]){
+      delete taskDates[prod][task];
+      if(taskDates[prod]._who) delete taskDates[prod]._who[task];
+    }
+  }
   debouncedSaveChecks();renderMetrics();renderTaskChecks();renderProdList();
 }
 
