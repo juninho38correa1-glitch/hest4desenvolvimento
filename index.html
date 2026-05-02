@@ -176,7 +176,8 @@ tr:hover td{background:var(--surface2)}
   .tabs{display:none}
 
   /* métricas: 2 por linha no mobile */
-  .metrics{grid-template-columns:repeat(2,1fr) !important;gap:8px;margin-bottom:1rem} .mc-val{font-size:18px}
+  .metrics{grid-template-columns:repeat(2,1fr) !important;gap:8px;margin-bottom:1rem}
+  #conta-he-preview .mc{min-width:0} .mc-val{font-size:18px}
   .mc{padding:10px 12px}
   .mc-val{font-size:20px}
 
@@ -337,9 +338,13 @@ tr:hover td{background:var(--surface2)}
             <select id="filter-pct" onchange="renderTable()">
               <option value="">Todos</option><option value="100">100% concluídos</option>
               <option value="67">Acima de 67%</option><option value="below">Abaixo de 67%</option>
+              <option value="inactive">Desativados</option>
             </select>
           </div>
           <div style="font-size:12px;color:var(--text3);font-family:Arial,sans-serif;align-self:center">Passe o mouse nas tarefas para ver a data · Clique no produto para detalhes</div>
+          <div id="prod-admin-btn" style="display:none;margin-left:auto">
+            <button class="btn btn-p btn-sm" onclick="openAddProd()">+ Novo produto</button>
+          </div>
         </div>
         <div class="tbl-wrap">
           <table>
@@ -383,15 +388,23 @@ tr:hover td{background:var(--surface2)}
     <div class="sec" id="sec-historico">
       <div class="card">
         <div class="sel-row" id="hist-filter-row" style="flex-wrap:wrap;gap:10px;align-items:flex-end">
-          <div class="fg"><label>Filtrar pessoa</label>
+          <div class="fg" id="h-filter-wrap"><label>Filtrar pessoa</label>
             <select id="h-filter" onchange="renderHistory().then(()=>renderChart())"><option value="">Todas</option></select>
+          </div>
+          <div class="fg"><label>Mês</label>
+            <select id="h-month" onchange="applyMonthFilter()">
+              <option value="">Todos os meses</option>
+            </select>
           </div>
           <div class="fg"><label>De</label><input type="date" id="h-date-from" onchange="renderHistory().then(()=>renderChart())"></div>
           <div class="fg"><label>Até</label><input type="date" id="h-date-to" onchange="renderHistory().then(()=>renderChart())"></div>
           <button class="btn btn-sm" onclick="clearHistFilter()" style="align-self:flex-end">Limpar filtros</button>
           <button class="btn btn-sm btn-p" onclick="renderHistory().then(()=>renderChart())" style="align-self:flex-end">↻ Atualizar</button>
+          <button class="btn btn-sm" onclick="exportHistPDF()" style="align-self:flex-end">🖨️ PDF</button>
+          <button class="btn btn-sm" id="btn-toggle-he" onclick="toggleHistHE()" style="align-self:flex-end">💰 Ver previsão HE</button>
           <div id="hist-total" style="align-self:flex-end;font-size:12px;color:var(--text2);font-family:Arial,sans-serif"></div>
         </div>
+        <div id="hist-he-preview"></div>
         <div id="hist-tbl"><div class="empty">Nenhuma sessão registrada.</div></div>
         <div class="chart-wrap"><canvas id="hchart"></canvas></div>
       </div>
@@ -592,6 +605,28 @@ tr:hover td{background:var(--surface2)}
   </div>
 </div>
 
+<!-- MODAL PRODUTO (admin) -->
+<div class="modal-overlay" id="prod-modal-overlay" onclick="closeModal('prod-modal-overlay')">
+  <div class="modal-box" onclick="event.stopPropagation()" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title" id="prod-modal-title">Novo produto</div>
+      <button class="modal-close" onclick="closeModal('prod-modal-overlay')">×</button>
+    </div>
+    <div id="prod-modal-err" class="login-err err-red"></div>
+    <div id="prod-modal-ok" class="login-err err-green"></div>
+    <div class="fg" style="margin-bottom:12px">
+      <label>Nome do produto</label>
+      <input type="text" id="prod-modal-name" placeholder="Ex: MONACO (NOVA)" style="text-transform:uppercase">
+    </div>
+    <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;font-family:Arial,sans-serif;margin-bottom:8px">Tarefas aplicáveis a este produto</div>
+    <div id="prod-modal-tasks" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:1.25rem"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px">
+      <button class="btn" onclick="closeModal('prod-modal-overlay')">Cancelar</button>
+      <button class="btn btn-p" onclick="saveProdModal()">Salvar produto</button>
+    </div>
+  </div>
+</div>
+
 <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
 <div class="drawer" id="drawer">
   <div class="drawer-header"><div class="drawer-title" id="drawer-title"></div><button class="drawer-close" onclick="closeDrawer()">×</button></div>
@@ -634,13 +669,21 @@ async function loadGlobalData(){
   const timeout = new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),6000));
   const load = Promise.all([
     sbGet('checks'), sbGet('taskDates'),
-    sbGet('obs'), sbGet('users'), sbGet('pendingUsers')
-  ]).then(([c,td,o,u,p])=>{
+    sbGet('obs'), sbGet('users'), sbGet('pendingUsers'), sbGet('products')
+  ]).then(([c,td,o,u,p,pr])=>{
     if(c)  checks       = c;
     if(td) taskDates    = td;
     if(o)  obs          = o;
     if(u)  users        = u;
     if(p)  pendingUsers = p;
+    if(pr && Array.isArray(pr)){
+      // merge: garante que novos produtos do RAW aparecem se não existirem ainda
+      const existingNames = new Set(pr.map(x=>x.name));
+      const fromRaw = RAW.filter(r=>!existingNames.has(r[0])).map(r=>({
+        name:r[0], active:true, tasksNv:TASKS.filter((t,i)=>(r[i+3]==='nv'))
+      }));
+      productList = [...pr, ...fromRaw];
+    }
   });
   await Promise.race([load, timeout]);
 }
@@ -748,6 +791,10 @@ async function saveChecksOnly(){
     setSyncing('ok');
   }catch(e){setSyncing('err');}
 }
+async function saveProductsOnly(){
+  try{ await sbSet('products', productList); setSyncing('ok'); }
+  catch(e){ setSyncing('err'); }
+}
 
 async function saveUsersOnly(){
   try{
@@ -832,8 +879,17 @@ const RAW=[
 ['TRULY','SIM','',N,N,N,N,N,N,N,N,N],['ST26-49','SIM','',O,O,N,N,N,N,N,N,N],
 ['PUGLIA ST26-47','SIM','',O,O,N,N,O,N,N,N,N],
 ];
-const PRODUCTS = RAW.map(r=>r[0]);
-const TOTAL_PRODS = PRODUCTS.length;
+// Lista dinâmica de produtos — persistida no Supabase como "products"
+// Cada item: {name, active, tasksNv:[...tarefas N/A deste produto]}
+let productList = RAW.map(r=>({
+  name: r[0],
+  active: true,
+  tasksNv: TASKS.filter((t,i)=>(r[i+3]==='nv'))
+}));
+// helpers sempre frescos
+const activeProds  = ()=> productList.filter(p=>p.active);
+const PRODUCTS     = ()=> activeProds().map(p=>p.name);
+const TOTAL_PRODS  = ()=> activeProds().length;
 
 // ══════════════════════════════════════════════════════
 // ESTADO
@@ -842,6 +898,15 @@ function buildDefaults(){
   const c={};
   RAW.forEach(r=>{c[r[0]]={};TASKS.forEach((t,i)=>{const v=r[i+3];c[r[0]][t]=v===O?true:(v===X?'nv':false);});});
   return c;
+}
+// Reconstrói checks usando productList.tasksNv (após carregar do Supabase)
+function syncChecksWithProductList(){
+  productList.forEach(prod=>{
+    if(!checks[prod.name]) checks[prod.name]={};
+    (prod.tasksNv||[]).forEach(t=>{
+      if(checks[prod.name][t]!==true) checks[prod.name][t]='nv';
+    });
+  });
 }
 function buildDefaultDates(){
   const d={};const imp='2025-01-01';
@@ -988,13 +1053,17 @@ async function loginSuccess(user){
   document.getElementById('tab-relatorio').style.display=isAdmin()?'':'none';
   document.getElementById('tab-colaborador').style.display=isAdmin()?'':'none';
   document.getElementById('tab-admin').style.display=isAdmin()?'':'none';
+  const padmin=document.getElementById('prod-admin-btn');
+  if(padmin) padmin.style.display=isAdmin()?'':'none';
   const hFilter=document.getElementById('h-filter');
   hFilter.innerHTML='<option value="">Todas</option>';
   if(isAdmin()){
     activeUsers().forEach(u=>{const o=document.createElement('option');o.value=u.name;o.textContent=u.name;hFilter.appendChild(o);});
     document.getElementById('hist-filter-row').style.display='';
+    document.getElementById('h-filter-wrap').style.display=''; // mostra filtro pessoa só pro admin
   }else{
-    document.getElementById('hist-filter-row').style.display='none';
+    document.getElementById('hist-filter-row').style.display=''; // funcionário vê os outros filtros
+    document.getElementById('h-filter-wrap').style.display='none'; // mas não vê filtro de pessoa
   }
   document.getElementById('s-person-display').value=user.name;
   document.getElementById('s-date').value=new Date().toISOString().slice(0,10);
@@ -1018,10 +1087,12 @@ async function loginSuccess(user){
   try{
     await loadSessions();
     setSyncing('ok');
+    populateMonthFilter();
     renderAll();
   }catch(e){
     console.error('Erro ao carregar sessões:', e);
     setSyncing('err');
+    populateMonthFilter();
     renderAll(); // renderiza mesmo assim com o que tiver
   }
 }
@@ -1036,7 +1107,11 @@ function doLogout(){
 // HELPERS
 // ══════════════════════════════════════════════════════
 const isOk=(p,t)=>checks[p]&&checks[p][t]===true;
-const isNv=(p,t)=>checks[p]&&checks[p][t]==='nv';
+const isNv=(p,t)=>{
+  if(checks[p]&&checks[p][t]==='nv') return true;
+  const prod=productList.find(x=>x.name===p);
+  return prod?.tasksNv?.includes(t)||false;
+};
 const barColor=pct=>pct===100?'#2d6a4f':pct>=67?'#1a5276':pct>=33?'#c07800':'#922b21';
 
 function prodPct(prod){
@@ -1044,13 +1119,13 @@ function prodPct(prod){
   TASKS.forEach(t=>{if(!isNv(prod,t)){total++;if(isOk(prod,t))done++;}});
   return total?Math.round(done/total*100):0;
 }
-function taskTotal(task){return PRODUCTS.filter(p=>isOk(p,task)).length;}
+function taskTotal(task){return PRODUCTS().filter(p=>isOk(p,task)).length;}
 function overallPct(){
   let done=0,total=0;
-  PRODUCTS.forEach(prod=>TASKS.forEach(t=>{if(!isNv(prod,t)){total++;if(isOk(prod,t))done++;}}));
+  PRODUCTS().forEach(prod=>TASKS.forEach(t=>{if(!isNv(prod,t)){total++;if(isOk(prod,t))done++;}}));
   return total?Math.round(done/total*100):0;
 }
-function completedProds(){return PRODUCTS.filter(p=>TASKS.every(t=>isOk(p,t)||isNv(p,t))).length;}
+function completedProds(){return PRODUCTS().filter(p=>TASKS.every(t=>isOk(p,t)||isNv(p,t))).length;}
 
 function personStats(pname){
   // busca por nome atual — inclui sessões antigas (por person) e novas (por username)
@@ -1109,7 +1184,7 @@ function sw(t){
   if(t==='visao')renderVisao();
   if(t==='tabela'){renderTable();renderMetrics();}
   if(t==='sessao'){renderProdList();renderChips();renderTaskChecks();renderMetrics();}
-  if(t==='historico'){renderHistory().then(()=>renderChart());}
+  if(t==='historico'){populateMonthFilter();renderHistory().then(()=>renderChart());}
   if(t==='relatorio'){renderReport();renderMetrics();}
   if(t==='colaborador'){activeCollab=activeCollab||(activeUsers()[0]?.name);renderCollabTabs();renderMetrics();}
   if(t==='admin')renderAdmin();
@@ -1146,7 +1221,7 @@ function renderMetrics(fp){
   document.getElementById('m-mes-sub').textContent=mesLabel;
   document.getElementById('m-s').textContent=filtered.length;
   document.getElementById('m-t').textContent=overallPct()+'%';
-  document.getElementById('m-p').textContent=completedProds()+'/'+TOTAL_PRODS;
+  document.getElementById('m-p').textContent=completedProds()+'/'+TOTAL_PRODS();
 
   if(fp){
     const pcfg=userCfg(fp);const color=pcfg?pcfg.tc:'var(--text)';
@@ -1186,8 +1261,8 @@ function renderVisao(){
     </div>`;
   }).join('');
   document.getElementById('task-bars').innerHTML=TASKS.map(t=>{
-    const done=taskTotal(t);const pct=Math.round(done/TOTAL_PRODS*100);const bc=barColor(pct);
-    return`<div class="pbar-wrap"><div class="pbar-row"><span>${t}</span><span style="color:${bc}">${done}/${TOTAL_PRODS} &nbsp;${pct}%</span></div><div class="pbar"><div class="pfill" style="width:${pct}%;background:${bc}"></div></div></div>`;
+    const done=taskTotal(t);const pct=Math.round(done/TOTAL_PRODS()*100);const bc=barColor(pct);
+    return`<div class="pbar-wrap"><div class="pbar-row"><span>${t}</span><span style="color:${bc}">${done}/${TOTAL_PRODS()} &nbsp;${pct}%</span></div><div class="pbar"><div class="pfill" style="width:${pct}%;background:${bc}"></div></div></div>`;
   }).join('');
 }
 
@@ -1202,16 +1277,40 @@ function badgeHtml(prod,task,val){
 function renderTable(){
   const search=(document.getElementById('search-prod').value||'').toLowerCase();
   const fp=document.getElementById('filter-pct').value;
-  const prods=PRODUCTS.filter(p=>{
-    if(search&&!p.toLowerCase().includes(search))return false;
-    const pct=prodPct(p);
-    if(fp==='100'&&pct<100)return false;if(fp==='67'&&pct<67)return false;if(fp==='below'&&pct>=67)return false;
+  // mostrar desativados?
+  const showInactive = fp==='inactive';
+  const pool = showInactive
+    ? productList.filter(p=>!p.active)
+    : activeProds();
+  const prods=pool.filter(p=>{
+    if(search&&!p.name.toLowerCase().includes(search))return false;
+    if(showInactive) return true;
+    const pct=prodPct(p.name);
+    if(fp==='100'&&pct<100)return false;
+    if(fp==='67'&&pct<67)return false;
+    if(fp==='below'&&pct>=67)return false;
     return true;
   });
   document.getElementById('prod-tbody').innerHTML=prods.map(prod=>{
-    const pct=prodPct(prod);const bc=barColor(pct);const hasObs=obs[prod]&&obs[prod].trim();
-    return`<tr><td><span class="prod-link" onclick="openDrawer('${esc(prod)}')">${prod}${hasObs?` <span style="font-size:10px;color:var(--amber)">●</span>`:''}</span></td>
-      ${TASKS.map(t=>`<td class="tc">${badgeHtml(prod,t,checks[prod]?checks[prod][t]:false)}</td>`).join('')}
+    const name=prod.name;const active=prod.active;
+    const pct=prodPct(name);const bc=barColor(pct);const hasObs=obs[name]&&obs[name].trim();
+    // tarefas do produto: usa checks[name] e tasksNv do produto
+    const prodTaskNv=prod.tasksNv||[];
+    const tasksRow=TASKS.map(t=>{
+      const isNvTask=prodTaskNv.includes(t);
+      const val=isNvTask?'nv':(checks[name]?checks[name][t]:false);
+      return`<td class="tc">${badgeHtml(name,t,val)}</td>`;
+    }).join('');
+    const editBtns=isAdmin()?`
+      <button class="del-btn" title="Editar produto" onclick="event.stopPropagation();openEditProd('${esc(name)}')" style="font-size:13px">✏️</button>
+      ${active
+        ?`<button class="del-btn" title="Desativar" onclick="event.stopPropagation();toggleProdActive('${esc(name)}',false)" style="color:var(--amber)">⊘</button>`
+        :`<button class="del-btn" title="Reativar" onclick="event.stopPropagation();toggleProdActive('${esc(name)}',true)" style="color:var(--green)">↺</button>`
+      }`:'';
+    return`<tr style="${!active?'opacity:.5;background:#f9f9f6':''}">
+      <td><span class="prod-link" onclick="openDrawer('${esc(name)}')">${name}${hasObs?` <span style="font-size:10px;color:var(--amber)">●</span>`:''}</span>
+      ${editBtns}</td>
+      ${tasksRow}
       <td style="text-align:right"><div class="pct-bar"><div class="mini-bar"><div class="mini-fill" style="width:${pct}%;background:${bc}"></div></div><span style="font-weight:600;color:${bc};min-width:34px;text-align:right">${pct}%</span></div></td>
     </tr>`;
   }).join('');
@@ -1289,7 +1388,7 @@ function calcHours(){
 }
 function renderProdList(){
   const search=(document.getElementById('prod-search')||{value:''}).value.toLowerCase();
-  const visible=PRODUCTS.filter(p=>!search||p.toLowerCase().includes(search));
+  const visible=PRODUCTS().filter(p=>!search||p.toLowerCase().includes(search));
   document.getElementById('prod-list').innerHTML=visible.map(p=>{
     const sel=selectedProds.has(p);const pct=prodPct(p);const bc=barColor(pct);
     return`<label style="display:flex;align-items:center;gap:7px;cursor:pointer;padding:5px 8px;border-radius:var(--radius-sm);border:1px solid ${sel?'#2d6a4f':'var(--border)'};background:${sel?'#d8f3dc':'var(--surface)'};font-size:12px;font-family:Arial,sans-serif;color:${sel?'#1b4332':'var(--text2)'}">
@@ -1300,7 +1399,7 @@ function renderProdList(){
 }
 function filterProdList(){renderProdList();}
 function toggleProd(prod,val){if(val)selectedProds.add(prod);else selectedProds.delete(prod);renderProdList();renderChips();renderTaskChecks();}
-function selectAllVisible(){const s=(document.getElementById('prod-search')||{value:''}).value.toLowerCase();PRODUCTS.filter(p=>!s||p.toLowerCase().includes(s)).forEach(p=>selectedProds.add(p));renderProdList();renderChips();renderTaskChecks();}
+function selectAllVisible(){const s=(document.getElementById('prod-search')||{value:''}).value.toLowerCase();PRODUCTS().filter(p=>!s||p.toLowerCase().includes(s)).forEach(p=>selectedProds.add(p));renderProdList();renderChips();renderTaskChecks();}
 function clearProds(){selectedProds.clear();renderProdList();renderChips();renderTaskChecks();}
 function renderChips(){
   const el=document.getElementById('selected-chips');
@@ -1313,9 +1412,12 @@ function renderTaskChecks(){
   let html='';
   [...selectedProds].forEach(prod=>{
     const pct=prodPct(prod);const bc=barColor(pct);
+    const prodObj=productList.find(p=>p.name===prod);
+    const nvList=prodObj?.tasksNv||[];
     html+=`<div style="margin-bottom:14px"><div style="font-size:11px;font-weight:600;color:${bc};margin-bottom:6px;font-family:Arial,sans-serif;text-transform:uppercase;letter-spacing:.05em">${prod} <span style="font-weight:400;color:var(--text3)">${pct}%</span></div>
     <div class="ck-grid">${TASKS.map(t=>{
-      const val=checks[prod]?checks[prod][t]:false;
+      const isNvTask=nvList.includes(t);
+      const val=isNvTask?'nv':(checks[prod]?checks[prod][t]:false);
       if(val==='nv')return`<div class="nv-label">N/A · ${t}</div>`;
       const isDone=val===true;
       return`<label class="ck-label ${isDone?'done':''}"><input type="checkbox" class="ck" ${isDone?'checked':''} onchange="toggleTask('${esc(prod)}','${t}',this.checked)">${t}</label>`;
@@ -1387,8 +1489,187 @@ async function addSession(){
 // ══════════════════════════════════════════════════════
 // HISTÓRICO
 // ══════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════
+// HISTÓRICO — FILTRO MÊS E EXPORTAR PDF
+// ══════════════════════════════════════════════════════
+
+// Popula o select de meses com base nas sessões disponíveis
+function populateMonthFilter(){
+  const sel = document.getElementById('h-month');
+  if(!sel) return;
+  const base = visibleSessions();
+  const months = [...new Set(base.map(s=>s.date.slice(0,7)))].sort().reverse();
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Todos os meses</option>';
+  months.forEach(m=>{
+    const [y,mo] = m.split('-');
+    const label = new Date(y, mo-1, 1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+    const opt = document.createElement('option');
+    opt.value = m;
+    opt.textContent = label.charAt(0).toUpperCase()+label.slice(1);
+    sel.appendChild(opt);
+  });
+  sel.value = months.includes(current) ? current : '';
+}
+
+// Ao selecionar mês no select, preenche os campos De/Até automaticamente
+function applyMonthFilter(){
+  const m = document.getElementById('h-month').value;
+  if(!m){
+    document.getElementById('h-date-from').value='';
+    document.getElementById('h-date-to').value='';
+  } else {
+    const [y,mo] = m.split('-').map(Number);
+    const lastDay = new Date(y, mo, 0).getDate();
+    document.getElementById('h-date-from').value = `${m}-01`;
+    document.getElementById('h-date-to').value   = `${m}-${String(lastDay).padStart(2,'0')}`;
+  }
+  renderHistory().then(()=>renderChart());
+}
+
+// Exportar histórico filtrado como PDF
+function exportHistPDF(){
+  const fp   = document.getElementById('h-filter')?.value || '';
+  const from = document.getElementById('h-date-from')?.value || '';
+  const to   = document.getElementById('h-date-to')?.value   || '';
+  const month= document.getElementById('h-month')?.value     || '';
+
+  // sessões filtradas (mesmo critério do renderHistory)
+  let list = visibleSessions().slice().reverse();
+  if(fp){
+    const fpUser=users.find(u=>u.name===fp);
+    list=list.filter(s=>s.person===fp||(fpUser&&s.username===fpUser.username));
+  }
+  if(from) list=list.filter(s=>s.date>=from);
+  if(to)   list=list.filter(s=>s.date<=to);
+
+  const totalH = list.reduce((a,s)=>a+s.hours,0);
+  const pessoaLabel = fp||'Todos';
+
+  // período label
+  let periodo='Todo o período';
+  if(month){
+    const [y,mo]=month.split('-').map(Number);
+    periodo=new Date(y,mo-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+    periodo=periodo.charAt(0).toUpperCase()+periodo.slice(1);
+  } else if(from||to){
+    periodo=`${from?new Date(from+'T12:00:00').toLocaleDateString('pt-BR'):'início'} a ${to?new Date(to+'T12:00:00').toLocaleDateString('pt-BR'):'hoje'}`;
+  }
+
+  const hoje = new Date().toLocaleDateString('pt-BR');
+
+  // cálculo HE para o usuário filtrado (se for uma pessoa específica com salário)
+  let heBlock='';
+  if(fp){
+    const uObj=users.find(u=>u.name===fp);
+    const he=uObj?calcHE(list,uObj):null;
+    if(he){
+      heBlock=`
+        <div class="he-box">
+          <div class="he-title">💰 Previsão de pagamento HE</div>
+          <div class="he-row"><span>Salário mensal:</span><strong>${fmtReais(he.salario)}</strong></div>
+          <div class="he-row"><span>Carga horária:</span><strong>${he.cargaH}h/mês</strong></div>
+          <div class="he-row"><span>Valor/hora:</span><strong>${fmtReais(he.valorHora)}</strong></div>
+          ${he.total50>0?`<div class="he-row"><span>HE a 50% (${fmtHours(he.total50)}):</span><strong>${fmtReais(he.total50*he.valorHora*1.5)}</strong></div>`:''}
+          ${he.total100>0?`<div class="he-row"><span>HE a 100% (${fmtHours(he.total100)}):</span><strong>${fmtReais(he.total100*he.valorHora*2)}</strong></div>`:''}
+          <div class="he-row total"><span>Total a receber:</span><strong>${fmtReais(he.totalReais)}</strong></div>
+        </div>`;
+    }
+  }
+
+  // gerar linhas da tabela
+  const rows = list.map(s=>{
+    const d=new Date(s.date+'T12:00:00').toLocaleDateString('pt-BR');
+    const prods=(s.prods||(s.prod?[s.prod]:[])).join(', ');
+    const time=s.start&&s.end?`${s.start}–${s.end}`:'–';
+    const f=fatorHE(s);
+    const fLabel=f>=2?'100%':'50%';
+    return`<tr>
+      <td>${d}</td>
+      <td>${s.person||'–'}</td>
+      <td>${time}</td>
+      <td style="text-align:center;font-weight:600">${fmtHours(s.hours)}</td>
+      <td style="text-align:center;font-size:11px">${fLabel}</td>
+      <td style="font-size:11px">${prods}</td>
+      <td style="font-size:11px;color:#666">${s.desc||'–'}</td>
+    </tr>`;
+  }).join('');
+
+  const html=`<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8">
+<title>Histórico HE — ${pessoaLabel} — ${periodo}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Arial,sans-serif;font-size:12px;color:#1a1916;padding:2rem}
+  .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.5rem;border-bottom:2px solid #1a1916;padding-bottom:1rem}
+  .title{font-size:18px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+  .subtitle{font-size:11px;color:#6b6860;margin-top:4px}
+  .meta{text-align:right;font-size:11px;color:#6b6860;line-height:1.8}
+  .summary{display:flex;gap:16px;margin-bottom:1.5rem;flex-wrap:wrap}
+  .sum-card{background:#f0efe9;border-radius:6px;padding:10px 16px;min-width:120px}
+  .sum-lbl{font-size:10px;color:#a09e98;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}
+  .sum-val{font-size:20px;font-weight:700;color:#1a1916}
+  .he-box{background:#d8f3dc;border:1px solid #b7e4c7;border-radius:8px;padding:14px 18px;margin-bottom:1.5rem}
+  .he-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#2d6a4f;margin-bottom:10px}
+  .he-row{display:flex;justify-content:space-between;padding:3px 0;font-size:12px;color:#1b4332;border-bottom:1px solid #b7e4c7}
+  .he-row.total{font-size:14px;font-weight:700;border-top:2px solid #2d6a4f;border-bottom:none;margin-top:4px;padding-top:6px}
+  table{width:100%;border-collapse:collapse;font-size:11px}
+  th{text-align:left;padding:7px 8px;background:#1a1916;color:#fff;font-size:10px;letter-spacing:.05em;text-transform:uppercase}
+  td{padding:6px 8px;border-bottom:1px solid #e8e7e3;vertical-align:top}
+  tr:nth-child(even) td{background:#f9f8f5}
+  .footer{margin-top:2rem;padding-top:1rem;border-top:1px solid #e8e7e3;font-size:10px;color:#a09e98;text-align:center}
+  @media print{body{padding:1rem}.footer{position:fixed;bottom:0;width:100%}}
+</style></head>
+<body>
+<div class="header">
+  <div>
+    <div class="title">STUDYO4 — Horas Extras</div>
+    <div class="subtitle">Relatório de ${pessoaLabel} · ${periodo}</div>
+  </div>
+  <div class="meta">
+    <div>Gerado em ${hoje}</div>
+    <div>Total de sessões: ${list.length}</div>
+    <div style="font-size:14px;font-weight:700;color:#1a1916;margin-top:4px">Total: ${fmtHours(totalH)}</div>
+  </div>
+</div>
+<div class="summary">
+  <div class="sum-card"><div class="sum-lbl">Total de horas</div><div class="sum-val">${fmtHours(totalH)}</div></div>
+  <div class="sum-card"><div class="sum-lbl">Sessões</div><div class="sum-val">${list.length}</div></div>
+  <div class="sum-card"><div class="sum-lbl">Colaborador</div><div class="sum-val" style="font-size:14px">${pessoaLabel}</div></div>
+  <div class="sum-card"><div class="sum-lbl">Período</div><div class="sum-val" style="font-size:13px">${periodo}</div></div>
+</div>
+${heBlock}
+<table>
+  <thead><tr><th>Data</th><th>Pessoa</th><th>Horário</th><th>Horas</th><th>Adicional</th><th>Produtos</th><th>Observação</th></tr></thead>
+  <tbody>${rows}</tbody>
+</table>
+<div class="footer">© Junior Corrêa · Studyo4 · Controle de Horas Extras</div>
+</body></html>`;
+
+  const w=window.open('','_blank');
+  w.document.write(html);
+  w.document.close();
+  setTimeout(()=>w.print(),500);
+}
+
+let showHistHE = false;
+
+function toggleHistHE(){
+  showHistHE = !showHistHE;
+  const btn = document.getElementById('btn-toggle-he');
+  if(btn){
+    btn.textContent = showHistHE ? '💰 Ocultar previsão HE' : '💰 Ver previsão HE';
+    btn.style.background = showHistHE ? 'var(--green-bg)' : '';
+    btn.style.color = showHistHE ? 'var(--green)' : '';
+    btn.style.borderColor = showHistHE ? '#b7e4c7' : '';
+  }
+  renderHistory();
+}
+
 function clearHistFilter(){
   document.getElementById('h-filter').value='';
+  const hm=document.getElementById('h-month');if(hm)hm.value='';
   document.getElementById('h-date-from').value='';
   document.getElementById('h-date-to').value='';
   renderHistory();renderChart();
@@ -1426,7 +1707,65 @@ async function renderHistory(){
   const totalEl=document.getElementById('hist-total');
   if(totalEl) totalEl.textContent=indices.length?`${indices.length} sessão(ões) · ${fmtHours(totalH)} total`:'';
 
-  const el=document.getElementById('hist-tbl');
+  // bloco de previsão HE — aparece só quando toggle está ativo
+  const heEl=document.getElementById('hist-he-preview');
+  if(heEl){
+    if(!showHistHE){
+      heEl.innerHTML='';
+    } else {
+      const fp2 = document.getElementById('h-filter')?.value||'';
+      const targetName = fp2 || currentUser?.name;
+      const targetUser = users.find(u=>u.name===targetName)||(fp2?null:users.find(u=>u.username===currentUser?.username));
+      const filteredSessions = indices.map(i=>sessions[i]).filter(Boolean);
+      if(targetUser && targetUser.salario && filteredSessions.length){
+        const he = calcHE(filteredSessions, targetUser);
+        if(he){
+          const dFrom = document.getElementById('h-date-from')?.value||'';
+          const dTo   = document.getElementById('h-date-to')?.value||'';
+          const mSel  = document.getElementById('h-month')?.value||'';
+          let periodoLabel = 'Todo o período';
+          if(mSel){
+            const [yy,mm]=mSel.split('-').map(Number);
+            let pl=new Date(yy,mm-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+            periodoLabel=pl.charAt(0).toUpperCase()+pl.slice(1);
+          } else if(dFrom||dTo){
+            periodoLabel=`${dFrom?new Date(dFrom+'T12:00:00').toLocaleDateString('pt-BR'):'início'} a ${dTo?new Date(dTo+'T12:00:00').toLocaleDateString('pt-BR'):'hoje'}`;
+          }
+          heEl.innerHTML=`
+            <div style="background:var(--green-bg);border:1px solid #b7e4c7;border-radius:var(--radius);padding:1rem 1.25rem;margin-bottom:1rem;font-family:Arial,sans-serif">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                <div style="font-size:11px;font-weight:600;color:var(--green);text-transform:uppercase;letter-spacing:.08em">💰 Previsão de pagamento HE — ${periodoLabel}</div>
+                <button onclick="toggleHistHE()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--green);line-height:1" title="Fechar">×</button>
+              </div>
+              <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:${he.total50>0||he.total100>0?'10px':'0'}">
+                <div>
+                  <div style="font-size:11px;color:var(--green);margin-bottom:2px">Total a receber</div>
+                  <div style="font-size:26px;font-weight:700;color:var(--green)">${fmtReais(he.totalReais)}</div>
+                  <div style="font-size:11px;color:var(--green)">${fmtHours(he.totalHoras)} de HE</div>
+                </div>
+                <div style="border-left:1px solid #b7e4c7;padding-left:20px">
+                  <div style="font-size:11px;color:var(--green);margin-bottom:2px">Valor/hora</div>
+                  <div style="font-size:20px;font-weight:600;color:var(--green)">${fmtReais(he.valorHora)}</div>
+                  <div style="font-size:11px;color:var(--green)">${fmtReais(he.salario)} ÷ ${he.cargaH}h/mês</div>
+                </div>
+              </div>
+              ${he.total50>0||he.total100>0?`
+              <div style="font-size:11px;color:var(--green);line-height:2;border-top:1px solid #b7e4c7;padding-top:8px;display:flex;gap:20px;flex-wrap:wrap">
+                ${he.total50>0?`<span>⏱ ${fmtHours(he.total50)} a +50% = <strong>${fmtReais(he.total50*he.valorHora*1.5)}</strong></span>`:''}
+                ${he.total100>0?`<span>⏱ ${fmtHours(he.total100)} a +100% = <strong>${fmtReais(he.total100*he.valorHora*2)}</strong></span>`:''}
+              </div>`:''}
+            </div>`;
+        } else { heEl.innerHTML=''; }
+      } else {
+        heEl.innerHTML=`<div style="background:var(--amber-bg);border:1px solid #f0c26a;border-radius:var(--radius);padding:12px 16px;margin-bottom:1rem;font-size:12px;color:var(--amber);font-family:Arial,sans-serif;display:flex;justify-content:space-between;align-items:center">
+          <span>💡 ${targetUser?.salario===undefined||!targetUser?.salario?'Configure seu salário em "Minha conta" para ver a previsão de pagamento.':'Nenhuma sessão no período selecionado.'}</span>
+          <button onclick="toggleHistHE()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--amber)">×</button>
+        </div>`;
+      }
+    }
+  }
+
+    const el=document.getElementById('hist-tbl');
   if(!indices.length){el.innerHTML='<div class="empty">Nenhuma sessão encontrada.</div>';return;}
   const rows=indices.map(ri=>{
     const s=sessions[ri];if(!s)return'';
@@ -1621,7 +1960,7 @@ ${sep}
 `;
   txt+=`Progresso geral    : ${overallPct()}%
 `;
-  txt+=`Produtos 100%      : ${completedProds()}/${TOTAL_PRODS}
+  txt+=`Produtos 100%      : ${completedProds()}/${TOTAL_PRODS()}
 `;
   if(rate>0) txt+=`Valor/hora         : R$ ${rate.toFixed(2)}
 `;
@@ -1677,9 +2016,9 @@ ${sep}
 `;
   TASKS.forEach(t=>{
     const d=taskTotal(t);
-    const pct=Math.round(d/TOTAL_PRODS*100);
+    const pct=Math.round(d/TOTAL_PRODS()*100);
     const bar='█'.repeat(Math.round(pct/10));
-    txt+=`  ${t.padEnd(20)} ${String(d).padStart(3)}/${TOTAL_PRODS}  ${pct}%  ${bar}
+    txt+=`  ${t.padEnd(20)} ${String(d).padStart(3)}/${TOTAL_PRODS()}  ${pct}%  ${bar}
 `;
   });
   txt+='\n';
@@ -1863,6 +2202,132 @@ function renderCollabContent(){
     html+=`</div>`;
   });
   el.innerHTML=html;
+}
+
+
+// ══════════════════════════════════════════════════════
+// GERENCIAMENTO DE PRODUTOS (admin)
+// ══════════════════════════════════════════════════════
+let editingProdName = null; // null = novo, string = editando
+
+function openAddProd(){
+  editingProdName = null;
+  document.getElementById('prod-modal-title').textContent = 'Novo produto';
+  document.getElementById('prod-modal-name').value = '';
+  document.getElementById('prod-modal-err').style.display='none';
+  document.getElementById('prod-modal-ok').style.display='none';
+  renderProdModalTasks(TASKS.slice(), []); // todas ativas por padrão
+  document.getElementById('prod-modal-overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('prod-modal-name').focus(),100);
+}
+
+function openEditProd(name){
+  editingProdName = name;
+  const prod = productList.find(p=>p.name===name);
+  if(!prod) return;
+  document.getElementById('prod-modal-title').textContent = 'Editar produto';
+  document.getElementById('prod-modal-name').value = name;
+  document.getElementById('prod-modal-err').style.display='none';
+  document.getElementById('prod-modal-ok').style.display='none';
+  renderProdModalTasks(TASKS.slice(), prod.tasksNv||[]);
+  document.getElementById('prod-modal-overlay').classList.add('open');
+}
+
+function renderProdModalTasks(allTasks, tasksNv){
+  document.getElementById('prod-modal-tasks').innerHTML = allTasks.map(t=>{
+    const isNvt = tasksNv.includes(t);
+    return`<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:7px 10px;border-radius:var(--radius-sm);border:1px solid ${isNvt?'var(--border)':'#2d6a4f'};background:${isNvt?'var(--bg)':'#d8f3dc'};font-size:12px;font-family:Arial,sans-serif;color:${isNvt?'var(--text3)':'#1b4332'}">
+      <input type="checkbox" ${isNvt?'':'checked'} data-task="${t}" onchange="updateProdTaskCheck(this,'${t}')" style="accent-color:#2d6a4f">
+      ${t}
+    </label>`;
+  }).join('');
+}
+
+function updateProdTaskCheck(el, task){
+  // apenas atualiza visual
+  const label = el.parentElement;
+  if(el.checked){
+    label.style.border='1px solid #2d6a4f';
+    label.style.background='#d8f3dc';
+    label.style.color='#1b4332';
+  } else {
+    label.style.border='1px solid var(--border)';
+    label.style.background='var(--bg)';
+    label.style.color='var(--text3)';
+  }
+}
+
+async function saveProdModal(){
+  const nameRaw = document.getElementById('prod-modal-name').value.trim().toUpperCase();
+  const err = document.getElementById('prod-modal-err');
+  const ok  = document.getElementById('prod-modal-ok');
+  err.style.display='none'; ok.style.display='none';
+
+  if(!nameRaw){ err.style.display='block'; err.textContent='Digite o nome do produto.'; return; }
+
+  // tarefas NV = as que estão desmarcadas
+  const checkboxes = document.querySelectorAll('#prod-modal-tasks input[type=checkbox]');
+  const tasksNv = [];
+  checkboxes.forEach(cb=>{ if(!cb.checked) tasksNv.push(cb.dataset.task); });
+
+  if(editingProdName === null){
+    // NOVO produto
+    if(productList.find(p=>p.name===nameRaw)){
+      err.style.display='block'; err.textContent='Já existe um produto com este nome.'; return;
+    }
+    productList.push({ name:nameRaw, active:true, tasksNv });
+    // inicializar checks e taskDates para o novo produto
+    checks[nameRaw] = {};
+    taskDates[nameRaw] = {};
+    TASKS.forEach(t=>{
+      checks[nameRaw][t] = tasksNv.includes(t) ? 'nv' : false;
+    });
+  } else {
+    // EDITAR produto existente
+    const idx = productList.findIndex(p=>p.name===editingProdName);
+    if(idx<0) return;
+    const oldName = editingProdName;
+
+    // renomear checks/taskDates se o nome mudou
+    if(nameRaw !== oldName){
+      if(productList.find(p=>p.name===nameRaw && p.name!==oldName)){
+        err.style.display='block'; err.textContent='Já existe um produto com este nome.'; return;
+      }
+      checks[nameRaw]   = checks[oldName]   || {};
+      taskDates[nameRaw]= taskDates[oldName] || {};
+      delete checks[oldName];
+      delete taskDates[oldName];
+      if(obs[oldName]){ obs[nameRaw]=obs[oldName]; delete obs[oldName]; }
+    }
+
+    productList[idx].name    = nameRaw;
+    productList[idx].tasksNv = tasksNv;
+
+    // atualizar checks para refletir novas tarefas NV
+    TASKS.forEach(t=>{
+      if(tasksNv.includes(t)){
+        checks[nameRaw][t]='nv';
+      } else if(checks[nameRaw][t]==='nv'){
+        checks[nameRaw][t]=false; // desmarca nv se tarefa foi reativada
+      }
+    });
+  }
+
+  await Promise.all([saveProductsOnly(), saveChecksOnly()]);
+  ok.style.display='block';
+  ok.textContent = editingProdName===null ? '✓ Produto adicionado!' : '✓ Produto atualizado!';
+  setTimeout(()=>closeModal('prod-modal-overlay'), 1000);
+  renderTable();
+  renderVisao();
+}
+
+async function toggleProdActive(name, active){
+  const prod = productList.find(p=>p.name===name);
+  if(!prod) return;
+  prod.active = active;
+  await saveProductsOnly();
+  renderTable();
+  renderVisao();
 }
 
 // ══════════════════════════════════════════════════════
@@ -2109,29 +2574,55 @@ function renderConta(){
     const heTotal = calcHE(sessoesTotal, u);
 
     if(!u.salario){
-      contaHE.innerHTML = '<div style="font-size:12px;color:var(--text3);font-family:Arial,sans-serif;padding:10px 0">Salário não configurado. Peça ao administrador para configurar.</div>';
-    } else {
-      const mesLabel = new Date(y, now.getMonth(), 1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
       contaHE.innerHTML = `
-        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;font-family:Arial,sans-serif">Previsão de recebimento</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div style="border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem;background:var(--surface2);font-family:Arial,sans-serif">
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px">Previsão de recebimento HE</div>
+          <div style="font-size:12px;color:var(--text3)">Salário não configurado ainda.<br>Preencha abaixo ou peça ao administrador para configurar.</div>
+        </div>`;
+    } else {
+      // último mês
+      const dUlt = new Date(y, now.getMonth()-1, 1);
+      const mesUlt = `${dUlt.getFullYear()}-${String(dUlt.getMonth()+1).padStart(2,'0')}`;
+      const sessoesUlt = sessions.filter(s=>
+        (s.username===currentUser.username||s.person===currentUser.name) &&
+        s.date.startsWith(mesUlt)
+      );
+      const heUlt = calcHE(sessoesUlt, u);
+
+      const mesLabel    = new Date(y, now.getMonth(),   1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+      const mesUltLabel = dUlt.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+
+      // detalhamento do mês atual
+      const detalhe = heMes&&(heMes.total50>0||heMes.total100>0) ? `
+        <div style="font-size:11px;color:var(--text3);font-family:Arial,sans-serif;background:var(--surface2);border-radius:var(--radius-sm);padding:10px 12px;line-height:1.9;margin-top:12px">
+          <div style="font-weight:600;color:var(--text2);margin-bottom:4px">Detalhamento — ${mesLabel}</div>
+          <div>💼 Valor/hora: ${fmtReais(heMes.valorHora)} (${fmtReais(heMes.salario)} ÷ ${heMes.cargaH}h)</div>
+          ${heMes.total50>0?`<div>⏱ ${fmtHours(heMes.total50)} a +50% = ${fmtReais(heMes.total50*heMes.valorHora*1.5)}</div>`:''}
+          ${heMes.total100>0?`<div>⏱ ${fmtHours(heMes.total100)} a +100% = ${fmtReais(heMes.total100*heMes.valorHora*2)}</div>`:''}
+        </div>` : '';
+
+      contaHE.innerHTML = `
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;font-family:Arial,sans-serif">Previsão de recebimento HE</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:4px">
           <div class="mc" style="padding:12px">
-            <div class="mc-lbl">${mesLabel}</div>
-            <div class="mc-val" style="font-size:20px;color:var(--green)">${heMes?fmtReais(heMes.totalReais):'R$ 0,00'}</div>
-            <div class="mc-sub">${heMes?fmtHours(heMes.totalHoras):0} horas extras</div>
+            <div class="mc-lbl">Mês atual</div>
+            <div class="mc-val" style="font-size:18px;color:var(--green)">${heMes?fmtReais(heMes.totalReais):'R$ 0,00'}</div>
+            <div class="mc-sub">${heMes?fmtHours(heMes.totalHoras):'0h'} de HE</div>
+            <div class="mc-sub" style="margin-top:2px;font-size:10px">${mesLabel}</div>
+          </div>
+          <div class="mc" style="padding:12px">
+            <div class="mc-lbl">Último mês</div>
+            <div class="mc-val" style="font-size:18px;color:var(--text2)">${heUlt?fmtReais(heUlt.totalReais):'R$ 0,00'}</div>
+            <div class="mc-sub">${heUlt?fmtHours(heUlt.totalHoras):'0h'} de HE</div>
+            <div class="mc-sub" style="margin-top:2px;font-size:10px">${mesUltLabel}</div>
           </div>
           <div class="mc" style="padding:12px">
             <div class="mc-lbl">Total acumulado</div>
-            <div class="mc-val" style="font-size:20px;color:var(--blue)">${heTotal?fmtReais(heTotal.totalReais):'R$ 0,00'}</div>
-            <div class="mc-sub">${heTotal?fmtHours(heTotal.totalHoras):0} horas extras</div>
+            <div class="mc-val" style="font-size:18px;color:var(--blue)">${heTotal?fmtReais(heTotal.totalReais):'R$ 0,00'}</div>
+            <div class="mc-sub">${heTotal?fmtHours(heTotal.totalHoras):'0h'} de HE</div>
           </div>
         </div>
-        ${heMes&&(heMes.total50>0||heMes.total100>0)?`
-        <div style="font-size:11px;color:var(--text3);font-family:Arial,sans-serif;background:var(--surface2);border-radius:var(--radius-sm);padding:10px 12px;line-height:1.8">
-          <div>💼 Valor/hora: ${fmtReais(heMes.valorHora)} (salário ${fmtReais(heMes.salario)} ÷ ${heMes.cargaH}h)</div>
-          ${heMes.total50>0?`<div>⏱ ${fmtHours(heMes.total50)} a 50% adicional = ${fmtReais(heMes.total50*heMes.valorHora*1.5)}</div>`:''}
-          ${heMes.total100>0?`<div>⏱ ${fmtHours(heMes.total100)} a 100% adicional = ${fmtReais(heMes.total100*heMes.valorHora*2)}</div>`:''}
-        </div>`:''}`;
+        ${detalhe}`;
     }
   }
   // preenche campos de salário com os valores atuais
@@ -2226,6 +2717,7 @@ function renderAll(){
 // INIT — sempre no final, após todas as funções
 // ══════════════════════════════════════════════════════
 function tryRestoreSession(){
+  syncChecksWithProductList(); // garante que checks refletem tasksNv do productList
   const saved = sessionStorage.getItem('s04_session');
   if(saved){
     try{
