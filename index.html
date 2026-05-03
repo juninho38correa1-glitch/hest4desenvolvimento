@@ -540,6 +540,12 @@ tr:hover td{background:var(--surface2)}
           <option value="admin">Admin</option>
         </select>
       </div>
+      <div class="fg" style="flex-direction:row;align-items:center;gap:10px;padding:8px 0">
+        <input type="checkbox" id="edit-user-can-report" style="accent-color:#2d6a4f;width:16px;height:16px;flex-shrink:0">
+        <label for="edit-user-can-report" style="font-size:12px;color:var(--text2);font-family:Arial,sans-serif;text-transform:none;letter-spacing:0;cursor:pointer">
+          Acesso ao Relatório geral e Por colaborador
+        </label>
+      </div>
       <div class="fg"><label>Cor do card</label>
         <select id="edit-user-color">
           <option value="">— padrão —</option>
@@ -711,8 +717,8 @@ async function loadAllFromSupabase(){
 
 async function loadSessions(){
   if(!currentUser) return;
-  if(isAdmin()){
-    // admin: carrega sessões de todos os usuários ativos
+  if(canViewReports()){
+    // admin e quem tem acesso a relatórios: carrega sessões de todos
     const allUsers = users.filter(u=>u.active);
     const results = await Promise.all(
       allUsers.map(u => sbGet('sessions_'+u.username).catch(()=>null))
@@ -936,7 +942,8 @@ let selectedProds   = new Set();
 let activeCollab    = null;
 let editIndex       = null;
 
-const isAdmin = () => currentUser?.role === 'admin';
+const isAdmin      = () => currentUser?.role === 'admin';
+const canViewReports = () => isAdmin() || currentUser?.canReport === true;
 const esc     = s => s.replace(/'/g, "\\'");
 
 // Retorna lista dinâmica de usuários ativos (não hardcoded)
@@ -1050,8 +1057,8 @@ async function loginSuccess(user){
   document.getElementById('top-avatar').textContent=user.name.slice(0,2).toUpperCase();
   document.getElementById('top-name').textContent=user.name;
   document.getElementById('top-admin-badge').style.display=isAdmin()?'inline-block':'none';
-  document.getElementById('tab-relatorio').style.display=isAdmin()?'':'none';
-  document.getElementById('tab-colaborador').style.display=isAdmin()?'':'none';
+  document.getElementById('tab-relatorio').style.display=canViewReports()?'':'none';
+  document.getElementById('tab-colaborador').style.display=canViewReports()?'':'none';
   document.getElementById('tab-admin').style.display=isAdmin()?'':'none';
   const padmin=document.getElementById('prod-admin-btn');
   if(padmin) padmin.style.display=isAdmin()?'':'none';
@@ -1144,7 +1151,7 @@ function personStats(pname){
 
 function visibleSessions(){
   if(!currentUser)return[];
-  if(isAdmin())return sessions;
+  if(canViewReports())return sessions;
   // busca por username (novo) OU por person/name (compatibilidade com sessões antigas)
   return sessions.filter(s=>
     s.username===currentUser.username ||
@@ -1245,7 +1252,7 @@ function renderMetrics(fp){
 // ══════════════════════════════════════════════════════
 function renderVisao(){
   renderMetrics();
-  const peopleToShow=isAdmin()?activeUsers():[users.find(u=>u.username===currentUser?.username)||{name:currentUser?.name,bg:'#eee',tc:'#444'}];
+  const peopleToShow=canViewReports()?activeUsers():[users.find(u=>u.username===currentUser?.username)||{name:currentUser?.name,bg:'#eee',tc:'#444'}];
   document.getElementById('person-cards').innerHTML=peopleToShow.map(u=>{
     const st=personStats(u.name);const bc=barColor(st.pct);
     const cfg=userCfg(u.name);
@@ -1680,8 +1687,8 @@ async function renderHistory(){
   const dateFrom=document.getElementById('h-date-from')?.value||'';
   const dateTo=document.getElementById('h-date-to')?.value||'';
 
-  // admin sempre recarrega sessões do banco ao abrir histórico
-  if(isAdmin()){
+  // quem tem acesso a relatórios recarrega sessões ao abrir histórico
+  if(canViewReports()){
     setSyncing('saving');
     document.getElementById('sync-txt').textContent='Atualizando...';
     try{ await loadSessions(); setSyncing('ok'); }
@@ -1924,7 +1931,7 @@ function clearRptFilter(){
 }
 
 function renderReport(){
-  if(!isAdmin()){document.getElementById('rpt-out').innerHTML='<div class="empty">Acesso restrito.</div>';return;}
+  if(!canViewReports()){document.getElementById('rpt-out').innerHTML='<div class="empty">Acesso restrito.</div>';return;}
 
   const df=document.getElementById('rpt-from').value;
   const dt=document.getElementById('rpt-to').value;
@@ -2351,6 +2358,7 @@ function renderAdmin(){
         🔑 <span id="pass-display-${i}" style="letter-spacing:.05em">${'•'.repeat(senhaLegivel.length)}</span>
         <button onclick="togglePassView(${i},'${senhaLegivel.replace(/'/g,"\\'")}',this)" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--blue);font-family:Arial,sans-serif">ver</button>
       </div>
+      ${u.canReport&&u.role!=='admin'?`<span style="font-size:11px;background:var(--blue-bg);color:var(--blue);padding:2px 8px;border-radius:99px;font-family:Arial,sans-serif;font-weight:600">📊 Relatórios</span>`:''}
       <div style="font-size:11px;font-family:Arial,sans-serif;color:var(--text2);background:var(--green-bg);color:var(--green);padding:3px 10px;border-radius:var(--radius-sm)">
         💰 ${u.salario?'R$ '+parseFloat(u.salario).toLocaleString('pt-BR',{minimumFractionDigits:2}):'sem salário'}
         ${u.salario?'· '+fmtHours(calcHE(sessions.filter(s=>s.username===u.username||s.person===u.name),u)?.totalHoras||0)+' HE este mês':''}
@@ -2417,6 +2425,8 @@ function openEditUser(i){
   document.getElementById('edit-user-color').value=u.color||'';
   document.getElementById('edit-user-salario').value=u.salario||'';
   document.getElementById('edit-user-carga').value=u.cargaHoras||'220';
+  const crEl=document.getElementById('edit-user-can-report');
+  if(crEl) crEl.checked=!!u.canReport;
   document.getElementById('edit-user-err').style.display='none';
   document.getElementById('edit-user-ok').style.display='none';
   document.getElementById('edit-user-overlay').classList.add('open');
@@ -2428,6 +2438,7 @@ async function saveEditUser(){
   const color=document.getElementById('edit-user-color').value;
   const salario=document.getElementById('edit-user-salario').value;
   const cargaHoras=document.getElementById('edit-user-carga').value||'220';
+  const canReport=!!(document.getElementById('edit-user-can-report')?.checked);
   const err=document.getElementById('edit-user-err');const ok=document.getElementById('edit-user-ok');
   err.style.display='none';ok.style.display='none';
   if(!name){err.style.display='block';err.textContent='Nome não pode ser vazio.';return;}
@@ -2440,6 +2451,7 @@ async function saveEditUser(){
   users[editUserIndex].color=color;
   users[editUserIndex].salario=salario;
   users[editUserIndex].cargaHoras=cargaHoras;
+  users[editUserIndex].canReport=canReport;
 
   // migra sessões antigas que não têm username: amarra pelo nome antigo
   let migrated=0;
@@ -2680,14 +2692,13 @@ async function addUser(){
   const username=document.getElementById('new-username').value.trim().toLowerCase().replace(/\s/g,'');
   const pass=document.getElementById('new-pass').value;
   const role=document.getElementById('new-role').value;
-  const color=document.getElementById('new-color')?document.getElementById('new-color').value||'':'';
+  const color=''; // cor atribuída automaticamente pelo índice
   if(!name||!username||!pass){alert('Preencha nome, login e senha.');return;}
   if(users.find(u=>u.username===username)){alert('Este login já existe.');return;}
   // cor vazia = automática (baseada no índice após inserção)
   users.push({username,name,role,password:btoa(pass),active:true,color});
   await saveUsersOnly();renderAdmin();
   ['new-name','new-username','new-pass'].forEach(id=>document.getElementById(id).value='');
-  const nc=document.getElementById('new-color');if(nc)nc.value='';
 }
 async function toggleUserActive(i){if(users[i].username==='junior')return;users[i].active=!users[i].active;await saveUsersOnly();renderAdmin();}
 async function removeUser(i){if(users[i].username==='junior')return;if(!confirm(`Remover ${users[i].name}?`))return;users.splice(i,1);await saveUsersOnly();renderAdmin();}
