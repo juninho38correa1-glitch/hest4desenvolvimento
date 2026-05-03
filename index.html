@@ -1058,7 +1058,7 @@ async function loginSuccess(user){
   const hFilter=document.getElementById('h-filter');
   hFilter.innerHTML='<option value="">Todas</option>';
   if(isAdmin()){
-    activeUsers().forEach(u=>{const o=document.createElement('option');o.value=u.name;o.textContent=u.name;hFilter.appendChild(o);});
+    activeUsers().filter(u=>u.role!=='admin').forEach(u=>{const o=document.createElement('option');o.value=u.name;o.textContent=u.name;hFilter.appendChild(o);});
     document.getElementById('hist-filter-row').style.display='';
     document.getElementById('h-filter-wrap').style.display=''; // mostra filtro pessoa só pro admin
   }else{
@@ -2461,7 +2461,7 @@ async function saveEditUser(){
   if(hf&&isAdmin()){
     const prev=hf.value;
     hf.innerHTML='<option value="">Todas</option>';
-    activeUsers().forEach(u=>{const o=document.createElement('option');o.value=u.name;o.textContent=u.name;hf.appendChild(o);});
+    activeUsers().filter(u=>u.role!=='admin').forEach(u=>{const o=document.createElement('option');o.value=u.name;o.textContent=u.name;hf.appendChild(o);});
     hf.value=prev===oldName?name:prev;
   }
   if(currentUser?.username===uname) currentUser.name=name;
