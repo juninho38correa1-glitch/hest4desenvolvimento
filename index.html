@@ -1972,7 +1972,7 @@ ${sep}
 `;
   const colSep='─'.repeat(56);
   txt+=colSep+'\n';
-  activeUsers().forEach(u=>{
+  activeUsers().filter(u=>u.role!=='admin').forEach(u=>{
     const uSess=rptSessions.filter(s=>s.person===u.name||(s.username&&s.username===u.username));
     const uH=uSess.reduce((a,s)=>a+s.hours,0);
     const uPag=rate>0?`  →  R$ ${(uH*rate).toFixed(2)}`:'' ;
