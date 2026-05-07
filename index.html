@@ -1337,9 +1337,9 @@ function openDrawer(prod){
     const val=checks[prod]?checks[prod][t]:false;
     const date=taskDates[prod]&&taskDates[prod][t]?fmtDate(taskDates[prod][t]):'importado';
     if(val==='nv')return`<div class="drawer-task-row nv"><span>${t}</span><span class="drawer-task-date">N/A</span></div>`;
-    const isDone=val===true;const canEdit=isAdmin();
+    const isDone=val===true;const canEdit=!!currentUser;
     return`<div class="drawer-task-row ${isDone?'done':''}">
-      <label style="display:flex;align-items:center;gap:8px;cursor:${canEdit?'pointer':'default'};flex:1">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1">
         <input type="checkbox" ${isDone?'checked':''} ${canEdit?`onchange="toggleFromDrawer('${esc(prod)}','${t}',this.checked)"`:'onclick="return false"'} style="accent-color:#2d6a4f">
         ${t}
       </label>
@@ -1355,7 +1355,7 @@ function closeDrawer(){
   currentDrawerProd=null;
 }
 function toggleFromDrawer(prod,task,val){
-  if(!isAdmin())return;
+  if(!currentUser)return;
   if(!checks[prod])checks[prod]={};
   checks[prod][task]=val;
   if(val){
@@ -1363,7 +1363,7 @@ function toggleFromDrawer(prod,task,val){
     taskDates[prod][task]=new Date().toISOString().slice(0,10);
     // registra quem ticou
     if(!taskDates[prod]._who) taskDates[prod]._who={};
-    taskDates[prod]._who[task]=currentUser?.name||'Admin';
+    taskDates[prod]._who[task]=currentUser?.name||'–';
   }else{
     if(taskDates[prod]){
       delete taskDates[prod][task];
