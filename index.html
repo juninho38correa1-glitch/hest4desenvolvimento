@@ -1298,6 +1298,7 @@ function renderTable(){
     if(fp==='below'&&pct>=67)return false;
     return true;
   });
+  prods.sort((a,b)=>prodPct(b.name)-prodPct(a.name));
   document.getElementById('prod-tbody').innerHTML=prods.map(prod=>{
     const name=prod.name;const active=prod.active;
     const pct=prodPct(name);const bc=barColor(pct);const hasObs=obs[name]&&obs[name].trim();
